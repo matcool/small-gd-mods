@@ -33,46 +33,46 @@ void (__thiscall* CCControlColourPicker_setColorValue)(extension::CCControlColou
 
 class ColorSelectPopup : public gd::FLAlertLayer, ColorPickerDelegate, TextInputDelegate, GJSpecialColorSelectDelegate {
 public:
-	extension::CCControlColourPicker* colorPicker; //0x01D8
-	PAD(4);
-	CCLabelBMFont *label; //0x01E0
-	PAD(4);
-	CCLayer *slider; //0x01E8
-	EffectGameObject *effectGameObject; //0x01EC
-	CCArray *N00000659; //0x01F0
-	gd::CCMenuItemToggler *toggler1; //0x01F4
-	gd::CCMenuItemToggler *toggler2; //0x01F8
-	PAD(4);
-	CCSprite *N0000065D; //0x0200
-	CCSprite *N0000065E; //0x0204
-	PAD(4);
-	CCLayer *colorSetupLayer; //0x020C
-	PAD(16);
-	ColorAction *colorAction; //0x0220
-	gd::CCTextInputNode *N00000643; //0x0224
-	bool N00000644; //0x0228
-	bool touchTrigger; //0x0229
-	bool N000006B7; //0x22A
-	bool isMultipleColorTrigger; //0x022B
-	bool N00000645; //0x022C
-	bool isColorTrigger; //0x022D
-	PAD(2);
-	int colorID; //0x0230
-	bool N00000647; //0x0234
-	PAD(3);
-	int copyChannelID; //0x0238
-	bool copyOpacity; //0x023C
-	PAD(3);
-	CCNode *configurehsvwidget; //0x0240
-	PAD(16);
-	CCArray *N00000650; //0x0254
-	CCArray *N00000651; //0x0258
-	gd::CCTextInputNode *textinputnode; //0x025C
+    extension::CCControlColourPicker* colorPicker; //0x01D8
+    PAD(4);
+    CCLabelBMFont *label; //0x01E0
+    PAD(4);
+    CCLayer *slider; //0x01E8
+    EffectGameObject *effectGameObject; //0x01EC
+    CCArray *N00000659; //0x01F0
+    gd::CCMenuItemToggler *toggler1; //0x01F4
+    gd::CCMenuItemToggler *toggler2; //0x01F8
+    PAD(4);
+    CCSprite *N0000065D; //0x0200
+    CCSprite *N0000065E; //0x0204
+    PAD(4);
+    CCLayer *colorSetupLayer; //0x020C
+    PAD(16);
+    ColorAction *colorAction; //0x0220
+    gd::CCTextInputNode *N00000643; //0x0224
+    bool N00000644; //0x0228
+    bool touchTrigger; //0x0229
+    bool N000006B7; //0x22A
+    bool isMultipleColorTrigger; //0x022B
+    bool N00000645; //0x022C
+    bool isColorTrigger; //0x022D
+    PAD(2);
+    int colorID; //0x0230
+    bool N00000647; //0x0234
+    PAD(3);
+    int copyChannelID; //0x0238
+    bool copyOpacity; //0x023C
+    PAD(3);
+    CCNode *configurehsvwidget; //0x0240
+    PAD(16);
+    CCArray *N00000650; //0x0254
+    CCArray *N00000651; //0x0258
+    gd::CCTextInputNode *textinputnode; //0x025C
     PAD(24);
-	bool spawnTrigger; //0x0278
-	bool multiTrigger; //0x0279
-	bool copyColor; //0x027A
-	PAD(1);
+    bool spawnTrigger; //0x0278
+    bool multiTrigger; //0x0279
+    bool copyColor; //0x027A
+    PAD(1);
 
     virtual void keyDown(int key);
     virtual void colorValueChanged(ccColor3B color);
@@ -84,16 +84,16 @@ public:
     inline void setPickerColor(const ccColor3B color) { CCControlColourPicker_setColorValue(colorPicker, color); }
 };
 
-std::string color_to_hex(ccColor3B color) {
-    static const auto digits = "0123456789ABCDEF";
-    char buffer[6];
-    unsigned int num = (color.r << 16) | (color.g << 8) | color.b;
-    for (unsigned int i = 0; i < 6; i += 2) {
-        auto j = 5 - i - 1;
-        buffer[j] = digits[(num >> (i * 4 + 4)) & 0xF];
-        buffer[j + 1] = digits[(num >> (i * 4)) & 0xF];
-    }
-    return std::string(buffer, 6);
+inline std::string color_to_hex(ccColor3B color) {
+    static constexpr auto digits = "0123456789ABCDEF";
+    std::string output;
+    output += digits[color.r >> 4 & 0xF];
+    output += digits[color.r      & 0xF];
+    output += digits[color.g >> 4 & 0xF];
+    output += digits[color.g      & 0xF];
+    output += digits[color.b >> 4 & 0xF];
+    output += digits[color.b      & 0xF];
+    return output;
 }
 
 class RGBColorInputWidget : public CCLayer, public CCTextFieldDelegate {
