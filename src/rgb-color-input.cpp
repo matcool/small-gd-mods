@@ -392,7 +392,7 @@ DWORD WINAPI my_thread(void* hModule) {
     MHook::registerHook(base + 0x43ae0, ColorSelectPopup_init);
     MHook::registerHook(base + 0x46f30, ColorSelectPopup_colorValueChanged);
     MHook::registerHook(base + 0x479c0, ColorSelectPopup_updateCopyColorIdfk);
-    MHook::registerHook(base + 0x20c60, ColorSelectPopup_dtor);
+    MHook::registerHook(base + 0x43900, ColorSelectPopup_dtor);
 
     MHook::registerHook(base + 0x23e980, SetupPulsePopup_init);
     MHook::registerHook(base + 0x2426b0, SetupPulsePopup_colorValueChanged);
