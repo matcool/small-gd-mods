@@ -335,7 +335,7 @@ void __fastcall ColorSelectPopup_updateCopyColorIdfk(ColorSelectPopup* self) {
         g_widget->setVisible(!self->copyColor);
 }
 
-void __fastcall ColorSelectPopup_dtor(void* self) {
+__declspec(noinline) void __fastcall ColorSelectPopup_dtor(void* self) {
     g_widget = nullptr;
     MHook::getOriginal(ColorSelectPopup_dtor)(self);
 }
@@ -368,7 +368,7 @@ void __fastcall SetupPulsePopup_switchPulseModeIDK(SetupPulsePopup* self) {
     if (g_widget)
         g_widget->setVisible(self->pulseMode == 0);
 }
-void __fastcall SetupPulsePopup_dtor(void* self) {
+__declspec(noinline) void __fastcall SetupPulsePopup_dtor(void* self) {
     g_widget = nullptr;
     MHook::getOriginal(SetupPulsePopup_dtor)(self);
 }
@@ -392,12 +392,12 @@ DWORD WINAPI my_thread(void* hModule) {
     MHook::registerHook(base + 0x43ae0, ColorSelectPopup_init);
     MHook::registerHook(base + 0x46f30, ColorSelectPopup_colorValueChanged);
     MHook::registerHook(base + 0x479c0, ColorSelectPopup_updateCopyColorIdfk);
-    MHook::registerHook(base + 0x43900, ColorSelectPopup_dtor);
+    // MHook::registerHook(base + 0x43900, ColorSelectPopup_dtor);
 
     MHook::registerHook(base + 0x23e980, SetupPulsePopup_init);
     MHook::registerHook(base + 0x2426b0, SetupPulsePopup_colorValueChanged);
     MHook::registerHook(base + 0x242cf0, SetupPulsePopup_switchPulseModeIDK);
-    MHook::registerHook(base + 0x23e7b0, SetupPulsePopup_dtor);
+    // MHook::registerHook(base + 0x23e7b0, SetupPulsePopup_dtor);
 
     MH_EnableHook(MH_ALL_HOOKS);
 
