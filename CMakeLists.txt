@@ -58,6 +58,8 @@ target_link_libraries(run-info ${CAPPUCCINO_DIR}/lib/cappuccino.lib)
 target_link_libraries(rgb-color-input ${CAPPUCCINO_DIR}/lib/cappuccino.lib)
 target_link_libraries(rgb-color-input ${CAPPUCCINO_DIR}/lib/libExtensions.lib)
 
+target_link_options(rgb-color-input PRIVATE "/OPT:REF,NOICF")
+
 # set_target_properties(global-clipboard PROPERTIES PREFIX "")
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
