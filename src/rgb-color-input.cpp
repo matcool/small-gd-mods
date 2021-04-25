@@ -132,9 +132,6 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         if (!CCLayer::init()) return false;
         this->parent = parent;
 
-        registerWithTouchDispatcher();
-        CCDirector::sharedDirector()->getTouchDispatcher()->incrementForcePrio(2);
-
         const ccColor3B placeholder_color = {100, 100, 100};
 
         constexpr float total_w = 115.f;
@@ -221,10 +218,6 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         bg->setZOrder(-1);
         bg->setPositionX(b_xpos);
         addChild(bg);
-        
-        setKeypadEnabled(true);
-        setKeyboardEnabled(true);
-        setTouchEnabled(true);
 
         return true;
     }
