@@ -15,11 +15,11 @@ class GJGameLevel : public CCNode {
 public:
     PAD(300);
     int attempts;
-
     PAD(104);
     int levelFolder;
+    PAD(185);
+    bool levelNotDownloaded;
 };
-
 
 class GameLevelManager : public CCNode {
 public:
@@ -54,19 +54,21 @@ public:
 	GJSearchObject* search_object;
 };
 
-inline int get_attempt_count_for_folder(int folder, CCDictionary* dict) {
+inline std::pair<int, int> get_attempt_count_for_folder(int folder, CCDictionary* dict) {
     int total = 0;
+    int downloaded_total = 0;
     CCDictElement* value;
     CCDICT_FOREACH(dict, value) {
         auto lvl = cast<GJGameLevel*>(value->getObject());
         if (lvl && (!folder || lvl->levelFolder == folder)) {
             total += lvl->attempts;
+            if (!lvl->levelNotDownloaded) downloaded_total += lvl->attempts;
         }
     }
-    return total;
+    return {total, downloaded_total};
 }
 
-inline int get_attempt_count_for_folder(int folder, CCArray* arr) {
+inline std::pair<int, int> get_attempt_count_for_folder(int folder, CCArray* arr) {
     int total = 0;
     CCObject* value;
     CCARRAY_FOREACH(arr, value) {
@@ -75,7 +77,18 @@ inline int get_attempt_count_for_folder(int folder, CCArray* arr) {
             total += lvl->attempts;
         }
     }
-    return total;
+    return {total, total};
+}
+
+inline const std::string format_commas(int value) {
+    // https://stackoverflow.com/a/24192835/9124836
+    auto str = std::to_string(value);
+    int n = str.length() - 3;
+    while (n > 0) {
+        str.insert(n, ",");
+        n -= 3;
+    }
+    return str;
 }
 
 class DaButtonCallback {
@@ -83,20 +96,18 @@ public:
     void callback(CCObject* sender) {
         auto lvl_browser = cast<LevelBrowserLayer*>(this);
         auto folder = lvl_browser->search_object->current_folder;
-        int total;
+        int total, downloaded_total;
+        std::pair<int, int> result;
         if (lvl_browser->search_object->search_type == 98) {
-            total = get_attempt_count_for_folder(folder, LocalLevelManager::sharedState()->levels_array);
+            result = get_attempt_count_for_folder(folder, LocalLevelManager::sharedState()->levels_array);
         } else {
-            total = get_attempt_count_for_folder(folder, GameLevelManager::sharedState()->dict_saved_levels);
+            result = get_attempt_count_for_folder(folder, GameLevelManager::sharedState()->dict_saved_levels);
         }
-        // https://stackoverflow.com/a/24192835/9124836
-        auto str = std::to_string(total);
-        int n = str.length() - 3;
-        while (n > 0) {
-            str.insert(n, ",");
-            n -= 3;
-        }
-        str += " attempts";
+        total = result.first;
+        downloaded_total = result.second;
+        auto str = format_commas(downloaded_total) + " attempts";
+        if (total != downloaded_total)
+            str += "\n" + format_commas(total) + " attempts <cr>from unloaded levels</c>";
         gd::FLAlertLayer::create(nullptr, "Attempt Count", "OK", nullptr, str.c_str())->show();
     }
 };
