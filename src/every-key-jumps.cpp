@@ -29,12 +29,15 @@ bool is_player1(int key) {
     return p1_keys.find(key) != p1_keys.end();
 }
 
+bool g_enabled = true;
+
 // i hate this
 bool g_left_shift = false;
 bool g_right_shift = false;
 
 void(__thiscall* dispatchKeyboardMSG)(void* self, int key, bool down);
 void __fastcall dispatchKeyboardMSGHook(void* self, void*, int key, bool down) {
+    if (!g_enabled) return dispatchKeyboardMSG(self, key, down);
     auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
     auto play_layer = *reinterpret_cast<uintptr_t*>(*reinterpret_cast<uintptr_t*>(base + 0x3222D0) + 0x164);
     if (play_layer && should_key_jump(key)) {
@@ -95,12 +98,12 @@ const char* enabled_key = "ekj_enabled";
 
 void __stdcall cb_check(void* cb) {
     set_game_variable(enabled_key, true);
-    MH_EnableHook(MH_ALL_HOOKS);
+    g_enabled = true;
 }
 
 void __stdcall cb_uncheck(void* cb) {
     set_game_variable(enabled_key, false);
-    MH_DisableHook(MH_ALL_HOOKS);
+    g_enabled = false;
 }
 
 DWORD WINAPI myThread(void* hModule) {
@@ -114,8 +117,9 @@ DWORD WINAPI myThread(void* hModule) {
     MH_Initialize();
 
     auto cocos = GetModuleHandleA("libcocos2d.dll");
+    auto addr = GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z");
     MH_CreateHook(
-        GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z"),
+        addr,
         dispatchKeyboardMSGHook,
         reinterpret_cast<void**>(&dispatchKeyboardMSG)
     );
@@ -125,13 +129,14 @@ DWORD WINAPI myThread(void* hModule) {
         if (HackproIsReady()) {
             ext = HackproInitialiseExt("every key jump");
             auto cb = HackproAddCheckbox(ext, "Toggle", cb_check, cb_uncheck);
-            if (get_game_variable(enabled_key))
+            if (g_enabled = get_game_variable(enabled_key))
                 HackproSetCheckbox(cb, true);
             HackproCommitExt(ext);
         }
     } else {
-        MH_EnableHook(MH_ALL_HOOKS);
+        g_enabled = true;
     }
+    MH_EnableHook(addr);
 
 #ifdef _DEBUG
     std::getline(std::cin, std::string());
@@ -149,6 +154,6 @@ DWORD WINAPI myThread(void* hModule) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-        CreateThread(0, 0x1000, myThread, hModule, 0, 0);
+        CreateThread(0, 0, myThread, hModule, 0, 0);
     return TRUE;
 }
