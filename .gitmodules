@@ -7,3 +7,6 @@
 [submodule "libraries/gd.h"]
 	path = libraries/gd.h
 	url = https://github.com/poweredbypie/gd.h.git
+[submodule "libraries/cocos-headers"]
+	path = libraries/cocos-headers
+	url = https://github.com/HJfod/cocos-headers.git
