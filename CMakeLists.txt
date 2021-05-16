@@ -22,58 +22,24 @@ add_library(rgb-color-input SHARED src/rgb-color-input.cpp)
 add_library(sum-attempts SHARED src/sum-attempts.cpp)
 add_library(ingame-screenshot SHARED src/ingame-screenshot.cpp)
 
-set(CAPPUCCINO_DIR ${CMAKE_SOURCE_DIR}/libraries/cappuccino-sdk/template/default-cpp/cappuccino-sdk)
-
-target_include_directories(global-clipboard PRIVATE
-  libraries/minhook/include
-)
-target_include_directories(run-info PRIVATE
-  libraries/minhook/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/kazmath/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32/OGLES
-)
-target_include_directories(every-key-jumps PRIVATE
-  libraries/minhook/include
-)
-target_include_directories(rgb-color-input PRIVATE
-  libraries/minhook/include
-  libraries/gd.h/include
-  libraries/gd.h
-  ${CAPPUCCINO_DIR}/incl/
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/kazmath/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32/OGLES
-)
-target_include_directories(sum-attempts PRIVATE
-  libraries/minhook/include
-  libraries/gd.h/include
-  libraries/gd.h
-  ${CAPPUCCINO_DIR}/incl/
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/kazmath/include
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32
-  ${CAPPUCCINO_DIR}/incl/cocos2dx/platform/third_party/win32/OGLES
-)
-target_include_directories(ingame-screenshot PRIVATE
-  libraries/minhook/include
-  libraries/gd.h/include
-  libraries/gd.h
-  libraries/cocos-headers/cocos2dx/
+set(MINHOOK libraries/minhook/include)
+set(COCOS2D-X
+  libraries/cocos-headers/
+  libraries/cocos-headers/cocos2dx
   libraries/cocos-headers/cocos2dx/include
   libraries/cocos-headers/cocos2dx/kazmath/include
   libraries/cocos-headers/cocos2dx/platform/win32
   libraries/cocos-headers/cocos2dx/platform/third_party/win32
   libraries/cocos-headers/cocos2dx/platform/third_party/win32/OGLES
 )
+set(GD.H libraries/gd.h libraries/gd.h/include)
+
+target_include_directories(global-clipboard PRIVATE ${MINHOOK})
+target_include_directories(run-info PRIVATE ${MINHOOK} ${COCOS2D-X})
+target_include_directories(every-key-jumps PRIVATE ${MINHOOK})
+target_include_directories(rgb-color-input PRIVATE ${MINHOOK} ${COCOS2D-X} ${GD.H})
+target_include_directories(sum-attempts PRIVATE ${MINHOOK} ${COCOS2D-X} ${GD.H})
+target_include_directories(ingame-screenshot PRIVATE ${MINHOOK} ${COCOS2D-X} ${GD.H})
 
 add_subdirectory(libraries/minhook)
 target_link_libraries(global-clipboard minhook)
@@ -83,15 +49,16 @@ target_link_libraries(rgb-color-input minhook)
 target_link_libraries(sum-attempts minhook)
 target_link_libraries(ingame-screenshot minhook)
 
-target_link_libraries(run-info ${CAPPUCCINO_DIR}/lib/cappuccino.lib)
-target_link_libraries(rgb-color-input ${CAPPUCCINO_DIR}/lib/cappuccino.lib)
-target_link_libraries(rgb-color-input ${CAPPUCCINO_DIR}/lib/libExtensions.lib)
-target_link_libraries(sum-attempts ${CAPPUCCINO_DIR}/lib/cappuccino.lib)
-target_link_libraries(ingame-screenshot ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/cocos2dx/libcocos2d.lib)
+set(COCOS2D_LIB
+  ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/cocos2dx/libcocos2d.lib
+  ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/extensions/libExtensions.lib
+)
+
+target_link_libraries(run-info ${COCOS2D_LIB})
+target_link_libraries(rgb-color-input ${COCOS2D_LIB})
+target_link_libraries(rgb-color-input ${COCOS2D_LIB})
+target_link_libraries(sum-attempts ${COCOS2D_LIB})
+target_link_libraries(ingame-screenshot ${COCOS2D_LIB} opengl32)
 
 target_link_options(rgb-color-input PRIVATE "/OPT:REF,NOICF")
 target_link_options(sum-attempts PRIVATE "/OPT:REF,NOICF")
-
-# set_target_properties(global-clipboard PROPERTIES PREFIX "")
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
