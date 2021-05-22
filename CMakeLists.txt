@@ -38,7 +38,7 @@ set(COCOS_HEADERS
 set(GD.H libraries/gd.h libraries/gd.h/include)
 
 target_include_directories(global-clipboard  PRIVATE ${MINHOOK})
-target_include_directories(run-info          PRIVATE ${MINHOOK} ${COCOS_HEADERS})
+target_include_directories(run-info          PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
 target_include_directories(every-key-jumps   PRIVATE ${MINHOOK})
 target_include_directories(rgb-color-input   PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
 target_include_directories(sum-attempts      PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
