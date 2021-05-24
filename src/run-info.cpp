@@ -12,13 +12,19 @@
 using namespace cocos2d;
 
 float g_start_x = 0.f;
-// CCLabelBMFont* status_label = nullptr;
-// CCLabelBMFont* info_label = nullptr;
 bool g_enabled = true;
 bool g_show_icon = true;
-bool g_show_status = true; // this can only be false if show_icon is true
+bool g_show_status = true;
 bool g_show_info = true;
 bool g_show_start_pos_icon = false; // i find it ugly
+
+enum Position {
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT,
+};
+auto g_position = Position::TOP_LEFT;
 
 void* g_ext = nullptr; // to check if u have mhv6
 
@@ -27,13 +33,14 @@ void update_labels(gd::PlayLayer* layer) {
     auto status_label = cast<CCLabelBMFont*>(layer->getChildByTag(4001));
     auto info_label = cast<CCLabelBMFont*>(layer->getChildByTag(4002));
     auto cool_sprite = cast<CCSprite*>(layer->getChildByTag(4003));
+    const auto win_size = CCDirector::sharedDirector()->getWinSize();
     if (!status_label) {
         status_label = CCLabelBMFont::create("status", "bigFont.fnt");
         status_label->setTag(4001);
         status_label->setOpacity(64);
         status_label->setScale(0.5f);
         status_label->setAnchorPoint({0, 1});
-        status_label->setPosition({ 5.f, CCDirector::sharedDirector()->getWinSize().height - 2.f });
+        status_label->setPosition({ 5.f, win_size.height - 2.f });
         status_label->setZOrder(999);
         layer->addChild(status_label);
     }
@@ -44,11 +51,9 @@ void update_labels(gd::PlayLayer* layer) {
         info_label->setScale(0.4f);
         info_label->setOpacity(64);
         info_label->setAnchorPoint({0, 1});
-        info_label->setPosition({ 5.f, status_label->getPositionY() - status_label->getScaledContentSize().height - 1.f });
         layer->addChild(info_label);
     }
     if (!cool_sprite) {
-        // cool_sprite = CCSprite::createWithSpriteFrameName("checkpoint_01_001.png");
         cool_sprite = CCSprite::create();
         cool_sprite->setTag(4003);
         cool_sprite->setZOrder(999);
@@ -65,7 +70,6 @@ void update_labels(gd::PlayLayer* layer) {
     }
     if (layer->is_practice_mode || layer->is_test_mode) {
         std::stringstream stream;
-        // stream.precision(2);
         stream << "From " << std::floor(g_start_x / layer->level_length * 100.f) << "%";
         info_label->setString(stream.str().c_str());
 
@@ -74,15 +78,35 @@ void update_labels(gd::PlayLayer* layer) {
         cool_sprite->initWithSpriteFrameName(layer->is_practice_mode ? "checkpoint_01_001.png" : "edit_eStartPosBtn_001.png");
         cool_sprite->setOpacity(64);
         cool_sprite->setScale(status_label->getScaledContentSize().height / cool_sprite->getContentSize().height);
-        cool_sprite->setAnchorPoint({0, 1});
-        cool_sprite->setPosition({ 5.f, status_label->getPositionY() - 1.f });
-        if (_show_icon) status_label->setPositionX(cool_sprite->getPositionX() + cool_sprite->getScaledContentSize().width + 2.f);
-        else status_label->setPositionX(5.f);
-        
+
+        bool top = !(g_position & 0b10);
+        bool left = !(g_position & 0b01);
+
+        cool_sprite->setAnchorPoint(ccp(!left, 1));
+        status_label->setAnchorPoint(cool_sprite->getAnchorPoint());
+        info_label->setAnchorPoint(cool_sprite->getAnchorPoint());
+
+        float x = left ? 5.f : win_size.width - 5.f;
+        float y = top ? win_size.height - 2.f : info_label->getScaledContentSize().height + status_label->getScaledContentSize().height + 5.f;
+        float offset = cool_sprite->getScaledContentSize().width + 2.f;
+        if (!left) offset *= -1.f;
+
+        status_label->setPositionY(y);
+        info_label->setPositionY(y - status_label->getScaledContentSize().height - 1.f);
+
+        cool_sprite->setPosition({ x, y - 1.f });
+        if (_show_icon) status_label->setPositionX(cool_sprite->getPositionX() + offset);
+        else status_label->setPositionX(cool_sprite->getPositionX());
+        info_label->setPositionX(cool_sprite->getPositionX());
+
         status_label->setVisible(g_enabled && g_show_status);
         info_label->setVisible(g_enabled && g_show_info);
         cool_sprite->setVisible(g_enabled && _show_icon);
     }
+}
+
+void update_labels() {
+    return update_labels(gd::GameManager::sharedState()->getPlayLayer());
 }
 
 void load_gm_values();
@@ -126,26 +150,24 @@ void* __fastcall PlayLayer_resetLevel_H(gd::PlayLayer* self) {
     return ret;
 }
 
-inline auto add_hook(uintptr_t addr, void* hook, void* tramp) {
-    return MH_CreateHook(cast<void*>(addr), hook, cast<void**>(tramp));
-}
-
 void set_gm_values() {
     auto gm = gd::GameManager::sharedState();
-    gm->setGameVariable("4001", g_enabled);
-    gm->setGameVariable("4002", g_show_icon);
-    gm->setGameVariable("4003", g_show_status);
-    gm->setGameVariable("4004", g_show_info);
-    gm->setGameVariable("4005", g_show_start_pos_icon);
+    gm->setGameVariable("RI_enabled", g_enabled);
+    gm->setGameVariable("RI_show_icon", g_show_icon);
+    gm->setGameVariable("RI_show_status", g_show_status);
+    gm->setGameVariable("RI_show_info", g_show_info);
+    gm->setGameVariable("RI_show_startpos", g_show_start_pos_icon);
+    gm->setIntGameVariable("RI_position", g_position);
 }
 
 void load_gm_values() {
     auto gm = gd::GameManager::sharedState();
-    g_enabled = gm->getGameVariable("4001");
-    g_show_icon = gm->getGameVariable("4002");
-    g_show_status = gm->getGameVariable("4003");
-    g_show_info = gm->getGameVariable("4004");
-    g_show_start_pos_icon = gm->getGameVariable("4005");
+    g_enabled = gm->getGameVariableDefault("RI_enabled", true);
+    g_show_icon = gm->getGameVariableDefault("RI_show_icon", true);
+    g_show_status = gm->getGameVariableDefault("RI_show_status", true);
+    g_show_info = gm->getGameVariableDefault("RI_show_info", true);
+    g_show_start_pos_icon = gm->getGameVariableDefault("RI_show_startpos", false);
+    g_position = Position(gm->getIntGameVariableDefault("RI_position", 0));
 }
 
 // this isnt what its called but im lazy
@@ -154,69 +176,51 @@ bool __fastcall OptionsLayer_init_H(void* self) {
     auto ret = OptionsLayer_init(self);
     auto base = cast<uintptr_t>(GetModuleHandle(0));
     auto add_toggle = cast<int (__thiscall*)(void*, const char*, const char*, const char*)>(base + 0x1DF6B0);
-    add_toggle(self, "Toggle Run Info", "4001", "Toggles the run info display mod.");
-    add_toggle(self, "RI: Show icon", "4002", nullptr);
-    add_toggle(self, "RI: Show status", "4003", nullptr);
-    add_toggle(self, "RI: Show info", "4004", nullptr);
-    add_toggle(self, "RI: Show Start Pos icon", "4005", nullptr);
+    add_toggle(self, "Toggle Run Info", "RI_enabled", "Toggles the run info display mod.");
+    add_toggle(self, "RI: Show icon", "RI_show_icon", nullptr);
+    add_toggle(self, "RI: Show status", "RI_show_status", nullptr);
+    add_toggle(self, "RI: Show info", "RI_show_info", nullptr);
+    add_toggle(self, "RI: Show Start Pos icon", "RI_show_startpos", nullptr);
     return ret;
 }
 
 void __stdcall cb_toggle_check(void* checkbox) {
     g_enabled = true;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
+    set_gm_values();
+    update_labels();
 }
 void __stdcall cb_toggle_uncheck(void* checkbox) {
     g_enabled = false;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
+    set_gm_values();
+    update_labels();
 }
 
-void* g_cb_show_icon;
-void* g_cb_show_status;
-
-void __stdcall cb_show_icon_check(void* checkbox) {
-    g_show_icon = true;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
-}
-void __stdcall cb_show_status_check(void*); // crazy
-void __stdcall cb_show_icon_uncheck(void* checkbox) {
-    g_show_icon = false;
-    if (!g_show_status) {
-        HackproSetCheckbox(g_cb_show_status, true);
-        cb_show_status_check(g_cb_show_status);
-    }
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
+#define GEN_CHECK_CALLBACK(name) \
+void __stdcall cb_##name##_check(void*) { \
+    g_##name = true; \
+    set_gm_values(); \
+    update_labels(); \
+} \
+void __stdcall cb_##name##_uncheck(void*) { \
+    g_##name = false; \
+    set_gm_values(); \
+    update_labels(); \
 }
 
-void __stdcall cb_show_status_check(void* checkbox) {
-    g_show_status = true;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
-}
-void __stdcall cb_show_status_uncheck(void* checkbox) {
-    g_show_status = false;
-    if (!g_show_icon) {
-        HackproSetCheckbox(g_cb_show_icon, true);
-        cb_show_icon_check(g_cb_show_icon);
-    }
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
+GEN_CHECK_CALLBACK(show_icon)
+GEN_CHECK_CALLBACK(show_status)
+GEN_CHECK_CALLBACK(show_info)
+GEN_CHECK_CALLBACK(show_start_pos_icon)
+
+void __stdcall cb_combo_changed(void* combo, int i, const char* what) {
+    g_position = Position(3 - i);
+    set_gm_values();
+    update_labels();
 }
 
-void __stdcall cb_show_info_check(void* checkbox) {
-    g_show_info = true;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
-}
-void __stdcall cb_show_info_uncheck(void* checkbox) {
-    g_show_info = false;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
-}
-
-void __stdcall cb_show_start_pos_icon_check(void* checkbox) {
-    g_show_start_pos_icon = true;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
-}
-void __stdcall cb_show_start_pos_icon_uncheck(void* checkbox) {
-    g_show_start_pos_icon = false;
-    update_labels(gd::GameManager::sharedState()->getPlayLayer());
+inline void add_hook(uintptr_t addr, void* hook, void* tramp) {
+    MH_CreateHook(cast<void*>(addr), hook, cast<void**>(tramp));
+    MH_QueueEnableHook(cast<void*>(addr));
 }
 
 // #define _DEBUG
@@ -237,22 +241,30 @@ DWORD WINAPI my_thread(void* hModule) {
     add_hook(base + 0x20D0D0, PlayLayer_togglePracticeMode_H, &PlayLayer_togglePracticeMode);
     add_hook(base + 0x20BF00, PlayLayer_resetLevel_H, &PlayLayer_resetLevel);
 
+    load_gm_values();
+
     if (InitialiseHackpro()) {
         if (HackproIsReady()) {
             g_ext = HackproInitialiseExt("Run info");
-            HackproAddCheckbox(g_ext, "Show Start Pos icon", cb_show_start_pos_icon_check, cb_show_start_pos_icon_uncheck);
-            HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show info", cb_show_info_check, cb_show_info_uncheck), true);
-            HackproSetCheckbox((g_cb_show_status = HackproAddCheckbox(g_ext, "Show status", cb_show_status_check, cb_show_status_uncheck)), true);
-            HackproSetCheckbox((g_cb_show_icon = HackproAddCheckbox(g_ext, "Show icon", cb_show_icon_check, cb_show_icon_uncheck)), true);
-            HackproSetCheckbox(HackproAddCheckbox(g_ext, "Toggle", cb_toggle_check, cb_toggle_uncheck), true);
-            HackproCommitExt(g_ext);
+            if (g_ext) {
+                HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show Start Pos icon", cb_show_start_pos_icon_check, cb_show_start_pos_icon_uncheck), g_show_start_pos_icon);
+                HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show info", cb_show_info_check, cb_show_info_uncheck), g_show_info);
+                HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show status", cb_show_status_check, cb_show_status_uncheck), g_show_status);
+                HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show icon", cb_show_icon_check, cb_show_icon_uncheck), g_show_icon);
+                HackproSetCheckbox(HackproAddCheckbox(g_ext, "Toggle", cb_toggle_check, cb_toggle_uncheck), g_enabled);
+                auto i = g_position;
+                auto combo = HackproAddComboBox(g_ext, cb_combo_changed);
+                const char* strs[] = {"Bottom Right", "Bottom Left", "Top Right", "Top Left", 0};
+                HackproSetComboBoxStrs(combo, strs);
+                HackproSetComboBoxIndex(combo, 3 - i);
+                HackproCommitExt(g_ext);
+            }
         }
     } else {
-        set_gm_values();
         add_hook(base + 0x1DE8F0, OptionsLayer_init_H, &OptionsLayer_init);
     }
     
-    MH_EnableHook(MH_ALL_HOOKS);
+    MH_ApplyQueued();
 
 #ifdef _DEBUG
     std::getline(std::cin, std::string());
