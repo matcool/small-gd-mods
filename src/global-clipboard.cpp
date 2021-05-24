@@ -2,7 +2,6 @@
 #include <windows.h>
 #include <MinHook.h>
 #include <string>
-#include "hackpro_ext.h"
 #include <iostream>
 #include <fstream>
 
@@ -49,18 +48,6 @@ void __fastcall EditorUI_destructorHook(void* self) {
     return EditorUI_destructor(self);
 }
 
-void __stdcall cb_check(void* cb) {
-    MH_EnableHook(MH_ALL_HOOKS);
-}
-
-void __stdcall cb_uncheck(void* cb) {
-    MH_DisableHook(MH_ALL_HOOKS);
-    if (g_clipboard) {
-        free(g_clipboard);
-        g_clipboard = nullptr;
-    }
-}
-
 DWORD WINAPI myThread(void* hModule) {
 #ifdef _DEBUG
     AllocConsole();
@@ -81,23 +68,12 @@ DWORD WINAPI myThread(void* hModule) {
 
     MH_EnableHook(MH_ALL_HOOKS);
 
-    void* ext;
-    if (InitialiseHackpro()) {
-        if (HackproIsReady()) {
-            ext = HackproInitialiseExt("GlobalClipboard");
-            HackproSetCheckbox(HackproAddCheckbox(ext, "Toggle", cb_check, cb_uncheck), true);
-            HackproCommitExt(ext);
-        }
-    }
-
 #ifdef _DEBUG
     std::getline(std::cin, std::string());
     conout.close();
     conin.close();
     FreeConsole();
     MH_Uninitialize();
-    if (ext)
-        HackproWithdrawExt(ext);
     FreeLibraryAndExitThread(reinterpret_cast<HMODULE>(hModule), 0);
 #endif
 
