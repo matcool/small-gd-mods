@@ -128,7 +128,7 @@ bool __fastcall PlayLayer_init_H(gd::PlayLayer* self, int, void* lvl) {
             }
         }
 
-        g_start_x = self->player1->position.x;
+        g_start_x = self->m_player1->position.x;
         update_labels(self);
         return true;
     }
@@ -143,9 +143,9 @@ void __fastcall PlayLayer_togglePracticeMode_H(gd::PlayLayer* self, int, bool to
 
 void* (__thiscall* PlayLayer_resetLevel)(gd::PlayLayer*);
 void* __fastcall PlayLayer_resetLevel_H(gd::PlayLayer* self) {
-    float die_x = self->player1->position.x;
+    float die_x = self->m_player1->position.x;
     auto ret = PlayLayer_resetLevel(self);
-    g_start_x = self->player1->position.x;
+    g_start_x = self->m_player1->position.x;
     update_labels(self);
     return ret;
 }
@@ -271,7 +271,6 @@ DWORD WINAPI my_thread(void* hModule) {
     
     if (g_ext)
         HackproWithdrawExt(g_ext);
-    MH_Uninitialize();
     conout.close();
     conin.close();
     FreeConsole();

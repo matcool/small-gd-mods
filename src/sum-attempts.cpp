@@ -165,6 +165,6 @@ DWORD WINAPI my_thread(void* hModule) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-        CreateThread(0, 0x1000, my_thread, hModule, 0, 0);
+        CreateThread(0, 0, my_thread, hModule, 0, 0);
     return TRUE;
 }

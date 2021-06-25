@@ -1,28 +1,16 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.3.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-project(global-clipboard)
-project(run-info)
-project(every-key-jumps)
-project(rgb-color-input)
-project(sum-attempts)
-project(ingame-screenshot)
-project(song-search)
+cmake_policy(SET CMP0057 NEW)
 
 find_file(WINDOWS_HEADER windows.h)
 if(NOT WINDOWS_HEADER)
   message(FATAL_ERROR "Can't find windows.h!")
 endif()
+# option(BUILD_SHARED_LIBS "" ON)
 
-add_library(global-clipboard SHARED src/global-clipboard.cpp)
-add_library(run-info SHARED src/run-info.cpp)
-add_library(every-key-jumps SHARED src/every-key-jumps.cpp)
-add_library(rgb-color-input SHARED src/rgb-color-input.cpp)
-add_library(sum-attempts SHARED src/sum-attempts.cpp)
-add_library(ingame-screenshot SHARED src/ingame-screenshot.cpp)
-add_library(song-search SHARED src/song-search.cpp)
+add_subdirectory(libraries/minhook)
 
 set(MINHOOK libraries/minhook/include)
 set(COCOS_HEADERS
@@ -37,27 +25,53 @@ set(COCOS_HEADERS
 )
 set(GD.H libraries/gd.h libraries/gd.h/include)
 
-target_include_directories(global-clipboard  PRIVATE ${MINHOOK})
-target_include_directories(run-info          PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
-target_include_directories(every-key-jumps   PRIVATE ${MINHOOK})
-target_include_directories(rgb-color-input   PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
-target_include_directories(sum-attempts      PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
-target_include_directories(ingame-screenshot PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
-target_include_directories(song-search       PRIVATE ${MINHOOK} ${COCOS_HEADERS} ${GD.H})
-
-add_subdirectory(libraries/minhook)
 set(COCOS2D_LIB
   ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/cocos2dx/libcocos2d.lib
   ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/extensions/libExtensions.lib
 )
 
-target_link_libraries(global-clipboard  minhook)
-target_link_libraries(run-info          minhook ${COCOS2D_LIB})
-target_link_libraries(every-key-jumps   minhook)
-target_link_libraries(rgb-color-input   minhook ${COCOS2D_LIB})
-target_link_libraries(sum-attempts      minhook ${COCOS2D_LIB})
-target_link_libraries(ingame-screenshot minhook ${COCOS2D_LIB} opengl32)
-target_link_libraries(song-search       minhook ${COCOS2D_LIB})
+macro(setup_mod project_name file_name)
+  project(${project_name})
+  add_library(${project_name} SHARED ${file_name})
 
-target_link_options(rgb-color-input PRIVATE "/OPT:REF,NOICF")
-target_link_options(sum-attempts PRIVATE "/OPT:REF,NOICF")
+  if (";${ARGN};" MATCHES ";minhook;")
+    target_include_directories(${project_name} PRIVATE ${MINHOOK})
+    target_link_libraries(${project_name} minhook)
+  endif()
+  if (";${ARGN};" MATCHES ";cocos;")
+    target_include_directories(${project_name} PRIVATE ${COCOS_HEADERS})
+    target_link_libraries(${project_name} ${COCOS2D_LIB})
+  endif()
+  if (";${ARGN};" MATCHES ";gd.h;")
+    target_include_directories(${project_name} PRIVATE ${GD.H})
+  endif()
+  if (";${ARGN};" MATCHES ";nomerge;")
+    target_link_options(${project_name} PRIVATE "/OPT:REF,NOICF")
+  endif()
+endmacro()
+
+
+setup_mod(global-clipboard src/global-clipboard.cpp
+  minhook)
+
+setup_mod(run-info src/run-info.cpp
+  minhook cocos gd.h)
+
+setup_mod(every-key-jumps src/every-key-jumps.cpp
+  minhook)
+
+setup_mod(rgb-color-input src/rgb-color-input.cpp
+  minhook cocos gd.h nomerge)
+
+setup_mod(sum-attempts src/sum-attempts.cpp
+  minhook cocos gd.h nomerge)
+
+setup_mod(ingame-screenshot src/ingame-screenshot.cpp
+  minhook cocos gd.h)
+target_link_libraries(ingame-screenshot opengl32)
+
+setup_mod(song-search src/song-search.cpp
+  minhook cocos gd.h)
+
+setup_mod(fps-multiplier src/fps-multiplier.cpp
+  minhook cocos)
