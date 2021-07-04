@@ -8,7 +8,7 @@ find_file(WINDOWS_HEADER windows.h)
 if(NOT WINDOWS_HEADER)
   message(FATAL_ERROR "Can't find windows.h!")
 endif()
-# option(BUILD_SHARED_LIBS "" ON)
+option(BUILD_SHARED_LIBS "" ON)
 
 add_subdirectory(libraries/minhook)
 
@@ -48,6 +48,7 @@ macro(setup_mod project_name file_name)
   if (";${ARGN};" MATCHES ";nomerge;")
     target_link_options(${project_name} PRIVATE "/OPT:REF,NOICF")
   endif()
+  set_target_properties(${project_name} PROPERTIES PREFIX "")
 endmacro()
 
 
