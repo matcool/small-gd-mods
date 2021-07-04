@@ -13,102 +13,6 @@ using namespace cocos2d;
 
 uintptr_t base;
 
-using EffectGameObject = gd::GameObject;
-
-using ColorAction = CCNode;
-
-class ColorPickerDelegate {
-    virtual void colorValueChanged(ccColor3B color);
-};
-
-class GJSpecialColorSelectDelegate {
-    virtual void idfk();
-};
-
-// THX pie :3
-class TextInputDelegate {
-    virtual void textChanged(gd::CCTextInputNode*) {}
-    virtual void textInputOpened(gd::CCTextInputNode*) {}
-    virtual void textInputClosed(gd::CCTextInputNode*) {}
-    virtual void textInputShouldOffset(gd::CCTextInputNode*, float) {}
-    virtual void textInputReturn(gd::CCTextInputNode*) {}
-    virtual bool allowTextInput(gd::CCTextInputNode*) { return true; }
-};
-
-class TextInputDelegateA {
-    virtual void idfk2();
-};
-
-void (__thiscall* CCControlColourPicker_setColorValue)(extension::CCControlColourPicker*, const ccColor3B&);
-
-class ColorSelectPopup : public gd::FLAlertLayer, ColorPickerDelegate, TextInputDelegateA, GJSpecialColorSelectDelegate {
-public:
-    extension::CCControlColourPicker* colorPicker; //0x01D8
-    PAD(4);
-    CCLabelBMFont *label; //0x01E0
-    PAD(4);
-    CCLayer *slider; //0x01E8
-    EffectGameObject *effectGameObject; //0x01EC
-    CCArray *N00000659; //0x01F0
-    gd::CCMenuItemToggler *toggler1; //0x01F4
-    gd::CCMenuItemToggler *toggler2; //0x01F8
-    PAD(4);
-    CCSprite *N0000065D; //0x0200
-    CCSprite *N0000065E; //0x0204
-    PAD(4);
-    CCLayer *colorSetupLayer; //0x020C
-    PAD(16);
-    ColorAction *colorAction; //0x0220
-    gd::CCTextInputNode *N00000643; //0x0224
-    bool N00000644; //0x0228
-    bool touchTrigger; //0x0229
-    bool N000006B7; //0x22A
-    bool isMultipleColorTrigger; //0x022B
-    bool N00000645; //0x022C
-    bool isColorTrigger; //0x022D
-    PAD(2);
-    int colorID; //0x0230
-    bool N00000647; //0x0234
-    PAD(3);
-    int copyChannelID; //0x0238
-    bool copyOpacity; //0x023C
-    PAD(3);
-    CCNode *configurehsvwidget; //0x0240
-    PAD(16);
-    CCArray *N00000650; //0x0254
-    CCArray *N00000651; //0x0258
-    gd::CCTextInputNode *textinputnode; //0x025C
-    PAD(24);
-    bool spawnTrigger; //0x0278
-    bool multiTrigger; //0x0279
-    bool copyColor; //0x027A
-    PAD(1);
-
-    virtual void keyDown(int key);
-    virtual void colorValueChanged(ccColor3B color);
-    virtual void idfk();
-    virtual void idfk2();
-
-    inline auto getAlertLayer() { return m_pLayer; }
-    inline auto getPickerColor() { return *cast<ccColor3B*>(cast<uintptr_t>(colorPicker) + 0x144); }
-    inline void setPickerColor(ccColor3B color) { CCControlColourPicker_setColorValue(colorPicker, color); }
-};
-
-class SetupPulsePopup : public gd::FLAlertLayer, ColorPickerDelegate, TextInputDelegate, GJSpecialColorSelectDelegate {
-public:
-    extension::CCControlColourPicker* colorPicker;
-    PAD(48);
-    CCSprite* currentColorSpr;
-    CCSprite* prevColorSpr;
-    PAD(100);
-    int pulseMode;
-
-    virtual void keyDown(int key);
-    virtual void colorValueChanged(ccColor3B color);
-    virtual void idfk();
-    virtual void idfk2();
-};
-
 inline std::string color_to_hex(ccColor3B color) {
     static constexpr auto digits = "0123456789ABCDEF";
     std::string output;
@@ -121,14 +25,14 @@ inline std::string color_to_hex(ccColor3B color) {
     return output;
 }
 
-class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
-    ColorSelectPopup* parent;
+class RGBColorInputWidget : public CCLayer, public gd::TextInputDelegate {
+    gd::ColorSelectPopup* parent;
     gd::CCTextInputNode* red_input;
     gd::CCTextInputNode* green_input;
     gd::CCTextInputNode* blue_input;
     gd::CCTextInputNode* hex_input;
 
-    bool init(ColorSelectPopup* parent) {
+    bool init(gd::ColorSelectPopup* parent) {
         if (!CCLayer::init()) return false;
         this->parent = parent;
 
@@ -152,7 +56,7 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         red_input->setLabelPlaceholderColor(placeholder_color);
         red_input->setLabelPlaceholerScale(0.5f);
         red_input->setPositionX(r_xpos);
-        *cast<TextInputDelegate**>(cast<uintptr_t>(red_input) + 0x17C) = this;
+        red_input->setDelegate(this);
 
         green_input = gd::CCTextInputNode::create("G", this, "bigFont.fnt", 30.f, 20.f);
         green_input->setAllowedChars("0123456789");
@@ -161,7 +65,7 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         green_input->setLabelPlaceholderColor(placeholder_color);
         green_input->setLabelPlaceholerScale(0.5f);
         green_input->setPositionX(0.f);
-        *cast<TextInputDelegate**>(cast<uintptr_t>(green_input) + 0x17C) = this;
+        green_input->setDelegate(this);
         
         blue_input = gd::CCTextInputNode::create("B", this, "bigFont.fnt", 30.f, 20.f);
         blue_input->setAllowedChars("0123456789");
@@ -170,7 +74,7 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         blue_input->setLabelPlaceholderColor(placeholder_color);
         blue_input->setLabelPlaceholerScale(0.5f);
         blue_input->setPositionX(b_xpos);
-        *cast<TextInputDelegate**>(cast<uintptr_t>(blue_input) + 0x17C) = this;
+        blue_input->setDelegate(this);
 
         hex_input = gd::CCTextInputNode::create("hex", this, "bigFont.fnt", 100.f, 20.f);
         hex_input->setAllowedChars("0123456789ABCDEFabcdef");
@@ -179,7 +83,7 @@ class RGBColorInputWidget : public CCLayer, public TextInputDelegate {
         hex_input->setLabelPlaceholderColor(placeholder_color);
         hex_input->setLabelPlaceholerScale(0.5f);
         hex_input->setPositionY(hex_y);
-        *cast<TextInputDelegate**>(cast<uintptr_t>(hex_input) + 0x17C) = this;
+        hex_input->setDelegate(this);
 
         addChild(red_input);
         addChild(green_input);
@@ -285,7 +189,7 @@ public:
         ignore = false;
     }
 
-    static auto create(ColorSelectPopup* parent) {
+    static auto create(gd::ColorSelectPopup* parent) {
         auto pRet = new RGBColorInputWidget();
         if (pRet && pRet->init(parent)) {
             pRet->autorelease();
@@ -300,7 +204,7 @@ public:
 
 RGBColorInputWidget* g_widget = nullptr;
 
-bool __fastcall ColorSelectPopup_init(ColorSelectPopup* self, void*, EffectGameObject* eff_obj, CCArray* arr, ColorAction* action) {
+bool __fastcall ColorSelectPopup_init(gd::ColorSelectPopup* self, void*, gd::EffectGameObject* eff_obj, CCArray* arr, gd::ColorAction* action) {
     if (!MHook::getOriginal(ColorSelectPopup_init)(self, 0, eff_obj, arr, action)) return false;
     auto layer = self->getAlertLayer();
     auto widget = RGBColorInputWidget::create(self);
@@ -316,13 +220,13 @@ bool __fastcall ColorSelectPopup_init(ColorSelectPopup* self, void*, EffectGameO
     return true;
 }
 
-void __fastcall ColorSelectPopup_colorValueChanged(ColorSelectPopup* self) {
+void __fastcall ColorSelectPopup_colorValueChanged(gd::ColorSelectPopup* self) {
     MHook::getOriginal(ColorSelectPopup_colorValueChanged)(self);
     if (g_widget)
         g_widget->update_labels(true, true);
 }
 
-void __fastcall ColorSelectPopup_updateCopyColorIdfk(ColorSelectPopup* self) {
+void __fastcall ColorSelectPopup_updateCopyColorIdfk(gd::ColorSelectPopup* self) {
     MHook::getOriginal(ColorSelectPopup_updateCopyColorIdfk)(self);
     if (g_widget)
         g_widget->setVisible(!self->copyColor);
@@ -333,11 +237,11 @@ void __fastcall ColorSelectPopup_dtor(void* self) {
     MHook::getOriginal(ColorSelectPopup_dtor)(self);
 }
 
-bool __fastcall SetupPulsePopup_init(SetupPulsePopup* self, void*, EffectGameObject* eff_obj, CCArray* arr) {
+bool __fastcall SetupPulsePopup_init(gd::SetupPulsePopup* self, void*, gd::EffectGameObject* eff_obj, CCArray* arr) {
     if (!MHook::getOriginal(SetupPulsePopup_init)(self, 0, eff_obj, arr)) return false;
 
-    auto layer = cast<ColorSelectPopup*>(self)->getAlertLayer();
-    auto widget = RGBColorInputWidget::create(cast<ColorSelectPopup*>(self)); // the color picker is in the same offset in both classe s
+    auto layer = cast<gd::ColorSelectPopup*>(self)->getAlertLayer();
+    auto widget = RGBColorInputWidget::create(cast<gd::ColorSelectPopup*>(self)); // the color picker is in the same offset in both classe s
     g_widget = widget;
     auto center = CCDirector::sharedDirector()->getWinSize() / 2.f;
     self->colorPicker->setPositionX(self->colorPicker->getPositionX() + 3.7f);
@@ -356,7 +260,7 @@ void __fastcall SetupPulsePopup_colorValueChanged(void* self) {
     if (g_widget)
         g_widget->update_labels(true, true);
 }
-void __fastcall SetupPulsePopup_switchPulseModeIDK(SetupPulsePopup* self) {
+void __fastcall SetupPulsePopup_switchPulseModeIDK(gd::SetupPulsePopup* self) {
     MHook::getOriginal(SetupPulsePopup_switchPulseModeIDK)(self);
     if (g_widget)
         g_widget->setVisible(self->pulseMode == 0);
@@ -378,9 +282,6 @@ DWORD WINAPI my_thread(void* hModule) {
     MH_Initialize();
 
     base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-
-    auto addr = GetProcAddress(GetModuleHandleA("libExtensions.dll"), "?setColorValue@CCControlColourPicker@extension@cocos2d@@UAEXABU_ccColor3B@3@@Z");
-    CCControlColourPicker_setColorValue = cast<decltype(CCControlColourPicker_setColorValue)>(addr);
     
     MHook::registerHook(base + 0x43ae0, ColorSelectPopup_init);
     MHook::registerHook(base + 0x46f30, ColorSelectPopup_colorValueChanged);
@@ -408,6 +309,6 @@ DWORD WINAPI my_thread(void* hModule) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-        CreateThread(0, 0x1000, my_thread, hModule, 0, 0);
+        CreateThread(0, 0, my_thread, hModule, 0, 0);
     return TRUE;
 }
