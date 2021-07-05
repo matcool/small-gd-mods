@@ -76,3 +76,8 @@ setup_mod(song-search src/song-search.cpp
 
 setup_mod(fps-multiplier src/fps-multiplier.cpp
   minhook cocos)
+
+setup_mod(menu-shaders src/menu-shaders.cpp
+  minhook cocos gd.h)
+target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
+
