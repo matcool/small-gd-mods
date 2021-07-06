@@ -7,4 +7,3 @@ All documentation can be found at https://matcool.github.io/mods
 - [Sum Attempts](https://github.com/matcool/small-gd-mods/releases/download/mods/sum-attempts.dll)  - Adds a button to the levels screen that adds up all the attempts in that folder
 - [Every key jumps](https://github.com/matcool/small-gd-mods/releases/download/mods/every-key-jumps.dll)  - Allows you to play gd with almost every key in your keyboard
 - [Global Clipboard](https://github.com/matcool/small-gd-mods/releases/download/mods/global-clipboard.dll)  - Stores your object clipboard between levels
-# Downloads ⭳
