@@ -54,7 +54,18 @@ public:
 
         constexpr float total_height = widget_height * (n_widgets - 1);
 
-        auto stencil = CCSprite::create("square.png");
+        // look, i really tried to use a CCDrawNode here
+        // but it just kept fucking up
+        // so instead make my own 1x1 white dot sprite
+        // cant rely on square.png as some people replace it
+        // for no particles
+
+        auto texture = new CCTexture2D();
+        texture->autorelease();
+        const unsigned char data[3] = {255, 255, 255};
+        texture->initWithData(data, kCCTexture2DPixelFormat_RGB888, 1, 1, {1, 1});
+        texture->setAliasTexParameters();
+        auto stencil = CCSprite::createWithTexture(texture);
         stencil->setScaleX(win_size.width / stencil->getContentSize().width);
         stencil->setScaleY(total_height / stencil->getContentSize().height);
         stencil->setAnchorPoint({0, 0});
