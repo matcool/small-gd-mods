@@ -81,3 +81,6 @@ setup_mod(menu-shaders src/menu-shaders.cpp
   minhook cocos gd.h)
 target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
 
+setup_mod(mats-orb-fix src/practice-orb-fix.cpp
+  minhook cocos gd.h nomerge)
+
