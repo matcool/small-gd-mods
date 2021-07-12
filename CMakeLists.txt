@@ -84,3 +84,6 @@ target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32
 setup_mod(mats-orb-fix src/practice-orb-fix.cpp
   minhook cocos gd.h nomerge)
 
+setup_mod(crash-logger src/crash-logger.cpp)
+target_link_libraries(crash-logger dbghelp.lib)
+
