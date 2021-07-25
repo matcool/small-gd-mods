@@ -15,7 +15,7 @@ std::vector<std::pair<size_t, size_t>> g_checkpoints;
 
 void handle(bool a, bool b, gd::GameObject* object) {
     auto play_layer = gd::GameManager::sharedState()->getPlayLayer();
-    if (play_layer && play_layer->is_practice_mode) {
+    if (play_layer && play_layer->m_isPracticeMode) {
         if (object->m_hasBeenActivated && !a)
             g_activated_objects.push_back(object);
         if (object->m_hasBeenActivatedP2 && !b)
@@ -46,7 +46,7 @@ void __fastcall GJBaseGameLayer_bumpPlayer(gd::GJBaseGameLayer* self, int, gd::P
 
 void __fastcall PlayLayer_resetLevel(gd::PlayLayer* self) {
     MHook::getOriginal(PlayLayer_resetLevel)(self);
-    if (self->checkpoint_array->count() == 0) {
+    if (self->m_checkpoints->count() == 0) {
         g_activated_objects.clear();
         g_activated_objects_p2.clear();
         g_checkpoints.clear();

@@ -59,23 +59,23 @@ void update_labels(gd::PlayLayer* layer) {
         cool_sprite->setZOrder(999);
         layer->addChild(cool_sprite);
     }
-    if (layer->is_practice_mode)
+    if (layer->m_isPracticeMode)
         status_label->setString("Practice");
-    else if (layer->is_test_mode)
+    else if (layer->m_isTestMode)
         status_label->setString("Testmode");
     else {
         status_label->setString("");
         info_label->setString("");
         cool_sprite->setVisible(false);
     }
-    if (layer->is_practice_mode || layer->is_test_mode) {
+    if (layer->m_isPracticeMode || layer->m_isTestMode) {
         std::stringstream stream;
-        stream << "From " << std::floor(g_start_x / layer->level_length * 100.f) << "%";
+        stream << "From " << std::floor(g_start_x / layer->m_levelLength * 100.f) << "%";
         info_label->setString(stream.str().c_str());
 
-        bool _show_icon = g_show_icon && (layer->is_practice_mode || g_show_start_pos_icon);
+        bool _show_icon = g_show_icon && (layer->m_isPracticeMode || g_show_start_pos_icon);
 
-        cool_sprite->initWithSpriteFrameName(layer->is_practice_mode ? "checkpoint_01_001.png" : "edit_eStartPosBtn_001.png");
+        cool_sprite->initWithSpriteFrameName(layer->m_isPracticeMode ? "checkpoint_01_001.png" : "edit_eStartPosBtn_001.png");
         cool_sprite->setOpacity(64);
         cool_sprite->setScale(status_label->getScaledContentSize().height / cool_sprite->getContentSize().height);
 
@@ -116,7 +116,7 @@ bool __fastcall PlayLayer_init_H(gd::PlayLayer* self, int, void* lvl) {
     if (PlayLayer_init(self, lvl)) {
         if (!g_ext)
             load_gm_values();
-        if (self->is_test_mode && g_enabled) {
+        if (self->m_isPracticeMode && g_enabled) {
             auto children = self->getChildren();
             for (unsigned int i = 0; i < children->count(); ++i) {
                 auto label = dynamic_cast<CCLabelBMFont*>(children->objectAtIndex(i));
@@ -128,7 +128,7 @@ bool __fastcall PlayLayer_init_H(gd::PlayLayer* self, int, void* lvl) {
             }
         }
 
-        g_start_x = self->m_player1->position.x;
+        g_start_x = self->m_player1->m_position.x;
         update_labels(self);
         return true;
     }
@@ -143,9 +143,9 @@ void __fastcall PlayLayer_togglePracticeMode_H(gd::PlayLayer* self, int, bool to
 
 void* (__thiscall* PlayLayer_resetLevel)(gd::PlayLayer*);
 void* __fastcall PlayLayer_resetLevel_H(gd::PlayLayer* self) {
-    float die_x = self->m_player1->position.x;
+    float die_x = self->m_player1->m_position.x;
     auto ret = PlayLayer_resetLevel(self);
-    g_start_x = self->m_player1->position.x;
+    g_start_x = self->m_player1->m_position.x;
     update_labels(self);
     return ret;
 }
