@@ -174,6 +174,7 @@ void load_gm_values() {
 bool (__thiscall* OptionsLayer_init)(void*);
 bool __fastcall OptionsLayer_init_H(void* self) {
     auto ret = OptionsLayer_init(self);
+    load_gm_values();
     auto base = cast<uintptr_t>(GetModuleHandle(0));
     auto add_toggle = cast<int (__thiscall*)(void*, const char*, const char*, const char*)>(base + 0x1DF6B0);
     add_toggle(self, "Toggle Run Info", "RI_enabled", "Toggles the run info display mod.");
@@ -241,12 +242,13 @@ DWORD WINAPI my_thread(void* hModule) {
     add_hook(base + 0x20D0D0, PlayLayer_togglePracticeMode_H, &PlayLayer_togglePracticeMode);
     add_hook(base + 0x20BF00, PlayLayer_resetLevel_H, &PlayLayer_resetLevel);
 
-    load_gm_values();
-
     if (InitialiseHackpro()) {
         if (HackproIsReady()) {
             g_ext = HackproInitialiseExt("Run info");
             if (g_ext) {
+                // it is safe to load the values here since mhv6 waits until MenuLayer::init
+                // im kinda surprised this works on a different thread
+                load_gm_values();
                 HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show Start Pos icon", cb_show_start_pos_icon_check, cb_show_start_pos_icon_uncheck), g_show_start_pos_icon);
                 HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show info", cb_show_info_check, cb_show_info_uncheck), g_show_info);
                 HackproSetCheckbox(HackproAddCheckbox(g_ext, "Show status", cb_show_status_check, cb_show_status_uncheck), g_show_status);
