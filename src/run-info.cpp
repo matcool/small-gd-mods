@@ -113,26 +113,12 @@ void load_gm_values();
 
 bool (__thiscall* PlayLayer_init)(gd::PlayLayer*, void*);
 bool __fastcall PlayLayer_init_H(gd::PlayLayer* self, int, void* lvl) {
-    if (PlayLayer_init(self, lvl)) {
-        if (!g_ext)
-            load_gm_values();
-        if (self->m_isPracticeMode && g_enabled) {
-            auto children = self->getChildren();
-            for (unsigned int i = 0; i < children->count(); ++i) {
-                auto label = dynamic_cast<CCLabelBMFont*>(children->objectAtIndex(i));
-                // amazing
-                if (label && label->getTag() != 4001 && label->getString()[0] == 'T') {
-                    label->setVisible(false);
-                    break;
-                }
-            }
-        }
-
-        g_start_x = self->m_player1->m_position.x;
-        update_labels(self);
-        return true;
-    }
-    return false;
+    if (!g_ext)
+        load_gm_values();
+    if (!PlayLayer_init(self, lvl)) return false;
+    g_start_x = self->m_player1->m_position.x;
+    update_labels(self);
+    return true;
 }
 
 void (__thiscall* PlayLayer_togglePracticeMode)(gd::PlayLayer*, bool);
@@ -148,6 +134,14 @@ void* __fastcall PlayLayer_resetLevel_H(gd::PlayLayer* self) {
     g_start_x = self->m_player1->m_position.x;
     update_labels(self);
     return ret;
+}
+
+void update_testmode_patch() {
+    const auto addr = cast<void*>(gd::base + 0x2d7dd8);
+    DWORD old_prot;
+    VirtualProtect(addr, 1, PAGE_EXECUTE_READWRITE, &old_prot);
+    *cast<char*>(addr) = g_enabled ? 0 : 'T';
+    VirtualProtect(addr, 1, old_prot, &old_prot);
 }
 
 void set_gm_values() {
@@ -168,6 +162,7 @@ void load_gm_values() {
     g_show_info = gm->getGameVariableDefault("RI_show_info", true);
     g_show_start_pos_icon = gm->getGameVariableDefault("RI_show_startpos", false);
     g_position = Position(gm->getIntGameVariableDefault("RI_position", 0));
+    update_testmode_patch();
 }
 
 // this isnt what its called but im lazy
@@ -188,11 +183,13 @@ bool __fastcall OptionsLayer_init_H(void* self) {
 void __stdcall cb_toggle_check(void* checkbox) {
     g_enabled = true;
     set_gm_values();
+    update_testmode_patch();
     update_labels();
 }
 void __stdcall cb_toggle_uncheck(void* checkbox) {
     g_enabled = false;
     set_gm_values();
+    update_testmode_patch();
     update_labels();
 }
 
