@@ -25,8 +25,10 @@ class ShaderNode : public CCNode {
         m_uniformMouse,
         m_uniformPulse1,
         m_uniformPulse2,
-        m_uniformPulse3;
-    float m_time;
+        m_uniformPulse3,
+        m_uniformPulseSmoothed,
+        m_uniformPulseSmoothedTime;
+    float m_time, m_pulseSmoothed, m_pulseSmoothedTime;
 public:
     bool init(const GLchar* vert, const GLchar* frag) {
         auto shader = new CCGLProgram;
@@ -50,6 +52,8 @@ public:
         m_uniformPulse1 = glGetUniformLocation(shader->getProgram(), "pulse1");
         m_uniformPulse2 = glGetUniformLocation(shader->getProgram(), "pulse2");
         m_uniformPulse3 = glGetUniformLocation(shader->getProgram(), "pulse3");
+        m_uniformPulseSmoothed = glGetUniformLocation(shader->getProgram(), "pulseSmoothed");
+        m_uniformPulseSmoothedTime = glGetUniformLocation(shader->getProgram(), "pulseSmoothedTime");
 
         this->setShaderProgram(shader);
 
@@ -66,6 +70,15 @@ public:
     }
     virtual void update(float dt) {
         m_time += dt;
+
+        auto engine = gd::FMODAudioEngine::sharedEngine();
+        if (m_pulseSmoothed > 0)
+            m_pulseSmoothed -= dt * 0.5;
+        if (m_pulseSmoothed < 0)
+            m_pulseSmoothed = 0;
+        if (m_pulseSmoothed < engine->m_fPulse1)
+            m_pulseSmoothed += dt;
+        m_pulseSmoothedTime += m_pulseSmoothed * dt;
     }
     virtual void draw() {
         CC_NODE_DRAW_SETUP();
@@ -91,6 +104,9 @@ public:
         glUniform1f(m_uniformPulse1, engine->m_fPulse1);
         glUniform1f(m_uniformPulse2, engine->m_fPulse2);
         glUniform1f(m_uniformPulse3, engine->m_fPulse3);
+
+        glUniform1f(m_uniformPulseSmoothed, m_pulseSmoothed);
+        glUniform1f(m_uniformPulseSmoothedTime, m_pulseSmoothedTime);
 
         ccGLEnableVertexAttribs(kCCVertexAttribFlag_Position);
 
