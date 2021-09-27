@@ -79,7 +79,8 @@ setup_mod(fps-multiplier src/fps-multiplier.cpp
 
 setup_mod(menu-shaders src/menu-shaders.cpp
   minhook cocos gd.h)
-target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
+target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib ${CMAKE_SOURCE_DIR}/libraries/fmod/fmod.lib)
+target_include_directories(menu-shaders PRIVATE libraries/fmod)
 
 setup_mod(mats-orb-fix src/practice-orb-fix.cpp
   minhook cocos gd.h nomerge)
