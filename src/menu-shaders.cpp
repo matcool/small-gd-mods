@@ -10,6 +10,7 @@
 #include <string>
 #include <CCGL.h>
 #include <filesystem>
+#include <fmod.hpp>
 
 using namespace cocos2d;
 
@@ -25,8 +26,16 @@ class ShaderNode : public CCNode {
         m_uniformMouse,
         m_uniformPulse1,
         m_uniformPulse2,
-        m_uniformPulse3;
+        m_uniformPulse3,
+        m_uniformFft;
     float m_time;
+    FMOD::DSP* m_fftDsp;
+    float m_spectrum[512] = { };
+    float m_oldSpectrum[512] = { };
+    float m_newSpectrum[512] = { };
+    float m_spectrumUpdateAccumulator;
+    const int FFT_SPECTRUM_SIZE = 512;
+    const float FFT_UPDATE_FREQUENCY = 20.f;
 public:
     bool init(const GLchar* vert, const GLchar* frag) {
         auto shader = new CCGLProgram;
@@ -36,6 +45,17 @@ public:
             std::cout << CCString::createWithFormat("OpenGL error 0x%04X in %s %s %d", __error, __FILE__, __FUNCTION__, __LINE__)->getCString() << std::endl;
             return false;
         }
+
+        auto engine = gd::FMODAudioEngine::sharedEngine();
+        static FMOD::DSP* fftDsp = nullptr;
+        if(!fftDsp) engine->m_eLastResult = engine->m_pSystem->createDSPByType(FMOD_DSP_TYPE_FFT, &fftDsp);
+        if(engine->m_pGlobalChannel->getDSPIndex(fftDsp, nullptr) != FMOD_OK)
+            engine->m_eLastResult = engine->m_pGlobalChannel->addDSP(FMOD_CHANNELCONTROL_DSP_TAIL, fftDsp);
+        engine->m_eLastResult = fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWTYPE, FMOD_DSP_FFT_WINDOW_TRIANGLE);
+        engine->m_eLastResult = fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_SPECTRUM_SIZE * 2);
+        engine->m_eLastResult = fftDsp->setActive(true);
+        engine->m_eLastResult = fftDsp->setBypass(false);
+        m_fftDsp = fftDsp;
 
         shader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
         shader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
@@ -50,6 +70,7 @@ public:
         m_uniformPulse1 = glGetUniformLocation(shader->getProgram(), "pulse1");
         m_uniformPulse2 = glGetUniformLocation(shader->getProgram(), "pulse2");
         m_uniformPulse3 = glGetUniformLocation(shader->getProgram(), "pulse3");
+        m_uniformFft = glGetUniformLocation(shader->getProgram(), "fft");
 
         this->setShaderProgram(shader);
 
@@ -66,6 +87,26 @@ public:
     }
     virtual void update(float dt) {
         m_time += dt;
+        m_spectrumUpdateAccumulator += dt;
+
+        const float speed = 1.f / FFT_UPDATE_FREQUENCY;
+        if(m_spectrumUpdateAccumulator >= speed) {
+            auto engine = gd::FMODAudioEngine::sharedEngine();
+            if(m_fftDsp) {
+                FMOD_DSP_PARAMETER_FFT* fftParameter;
+                engine->m_eLastResult = m_fftDsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&fftParameter, nullptr, nullptr, 0);
+
+                for(int i = 0; i < FFT_SPECTRUM_SIZE; i++) {
+                    m_oldSpectrum[i] = m_newSpectrum[i];
+                    m_newSpectrum[i] = (fftParameter->spectrum[0][i] + fftParameter->spectrum[1][i]) / 2.f;
+                }
+            }
+            m_spectrumUpdateAccumulator = 0.f;
+        }
+        float t = m_spectrumUpdateAccumulator * FFT_UPDATE_FREQUENCY;
+        for(int i = 0; i < FFT_SPECTRUM_SIZE; i++) {
+            m_spectrum[i] = (1.f - t) * m_oldSpectrum[i] + t * m_newSpectrum[i];
+        }
     }
     virtual void draw() {
         CC_NODE_DRAW_SETUP();
@@ -91,6 +132,8 @@ public:
         glUniform1f(m_uniformPulse1, engine->m_fPulse1);
         glUniform1f(m_uniformPulse2, engine->m_fPulse2);
         glUniform1f(m_uniformPulse3, engine->m_fPulse3);
+
+        glUniform1fv(m_uniformFft, FFT_SPECTRUM_SIZE, m_spectrum);
 
         ccGLEnableVertexAttribs(kCCVertexAttribFlag_Position);
 
