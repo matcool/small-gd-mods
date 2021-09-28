@@ -29,7 +29,7 @@ class ShaderNode : public CCNode {
         m_uniformPulse3,
         m_uniformFft;
     float m_time;
-    FMOD::DSP* m_fftDsp;
+    FMOD::DSP* m_fftDsp = nullptr;
     static constexpr int FFT_SPECTRUM_SIZE = 512;
     static constexpr float FFT_UPDATE_FREQUENCY = 20.f;
     float m_spectrum[FFT_SPECTRUM_SIZE];
@@ -47,15 +47,15 @@ public:
         }
 
         auto engine = gd::FMODAudioEngine::sharedEngine();
-        static FMOD::DSP* fftDsp = nullptr;
-        if (!fftDsp) {
-            engine->m_pSystem->createDSPByType(FMOD_DSP_TYPE_FFT, &fftDsp);
-            engine->m_pGlobalChannel->addDSP(0, fftDsp);
-            fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWTYPE, FMOD_DSP_FFT_WINDOW_TRIANGLE);
-            fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_SPECTRUM_SIZE * 2);
-            fftDsp->setActive(true);
-        }
-        m_fftDsp = fftDsp;
+        engine->m_pSystem->createDSPByType(FMOD_DSP_TYPE_FFT, &m_fftDsp);
+        engine->m_pGlobalChannel->addDSP(1, m_fftDsp);
+        m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWTYPE, FMOD_DSP_FFT_WINDOW_HAMMING);
+        m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_SPECTRUM_SIZE * 2);
+        m_fftDsp->setActive(true);
+
+        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE);
+        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE);
+        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE);
 
         shader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
         shader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
@@ -85,6 +85,13 @@ public:
         setAnchorPoint({0.5f, 0.5f});
         return true;
     }
+
+    ~ShaderNode() {
+        if (m_fftDsp) {
+            gd::FMODAudioEngine::sharedEngine()->m_pGlobalChannel->removeDSP(m_fftDsp);
+        }
+    }
+
     virtual void update(float dt) {
         m_time += dt;
         m_spectrumUpdateAccumulator += dt;
@@ -98,7 +105,7 @@ public:
                 m_fftDsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&data, &length, nullptr, 0);
                 if (length) {
                     std::cout << data->length << std::endl;
-                    for (size_t i = 0; i < FFT_SPECTRUM_SIZE; i++) {
+                    for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
                         // average out the left and right channels
                         m_newSpectrum[i] = (data->spectrum[0][i] + data->spectrum[1][i]) / 2.f;
