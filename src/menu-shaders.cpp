@@ -36,14 +36,37 @@ class ShaderNode : public CCNode {
     float m_oldSpectrum[FFT_SPECTRUM_SIZE];
     float m_newSpectrum[FFT_SPECTRUM_SIZE];
     float m_spectrumUpdateAccumulator;
+    CCArray* m_shaderSprites;
 public:
-    bool init(const GLchar* vert, const GLchar* frag) {
+    bool init(const GLchar* vert, const std::string& frag) {
         auto shader = new CCGLProgram;
-        if (!shader->initWithVertexShaderByteArray(vert, frag)) {
+        if (!shader->initWithVertexShaderByteArray(vert, frag.c_str())) {
             // this doesnt work :c
             auto error = glGetError();
             std::cout << "opengl error " << error << std::endl;
             return false;
+        }
+        m_shaderSprites = CCArray::create();
+        if (frag.size() > 3 && frag.compare(0, 3, "//@") == 0) {
+            std::istringstream stream(frag);
+            stream.seekg(4);
+            std::string line;
+            std::getline(stream, line);
+            std::string::size_type pos = line.find(',');
+            const auto addSprite = [&](const std::string& name) {
+                std::cout << "loading sprite \"" << name << "\"" << std::endl;
+                auto sprite = CCSprite::create(name.c_str());
+                sprite->retain();
+                std::cout << sprite << std::endl;
+                m_shaderSprites->addObject(sprite);
+            };
+            int i = 0;
+            while (pos = line.find(','), pos != std::string::npos) {
+                auto me = line.substr(0, pos);
+                line = line.substr(pos + 1);
+                addSprite(me);
+            }
+            if (line.size()) addSprite(line);
         }
 
         auto engine = gd::FMODAudioEngine::sharedEngine();
@@ -73,6 +96,15 @@ public:
         m_uniformFft = glGetUniformLocation(shader->getProgram(), "fft");
 
         this->setShaderProgram(shader);
+
+        for (size_t i = 0; i < m_shaderSprites->count(); ++i) {
+            auto uniform = glGetUniformLocation(shader->getProgram(), ("sprite" + std::to_string(i)).c_str());
+            glUniform1i(uniform, i);
+            std::cout << "setting some uniform" << std::endl;
+            auto sprite = reinterpret_cast<CCSprite*>(m_shaderSprites->objectAtIndex(i));
+            sprite->setScale(0.3f);
+            ccGLBindTexture2DN(sprite->getTexture()->getName(), i);
+        }
 
         m_time = 0.f;
         auto size = CCDirector::sharedDirector()->getWinSize();
@@ -104,7 +136,6 @@ public:
                 unsigned int length;
                 m_fftDsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&data, &length, nullptr, 0);
                 if (length) {
-                    std::cout << data->length << std::endl;
                     for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
                         // average out the left and right channels
@@ -154,7 +185,7 @@ public:
         
         // CC_INCREMENT_GL_DRAWS(1); // this crashes :c
     }
-    static auto create(const GLchar* vert, const GLchar* frag) {
+    static auto create(const GLchar* vert, const std::string& frag) {
         auto node = new ShaderNode;
         if (node->init(vert, frag)) {
             node->autorelease();
@@ -290,7 +321,7 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
         void main() {
             gl_Position = CC_MVPMatrix * a_position;
         }
-    ), shaderSource.c_str());
+    ), shaderSource);
 
     if (shader == nullptr)
         return true;
@@ -311,7 +342,7 @@ bool __fastcall MoreOptionsLayer_init_H(gd::MoreOptionsLayer* self) {
     return true;
 }
 
-// #define _DEBUG
+#define _DEBUG
 
 DWORD WINAPI my_thread(void* hModule) {
 #ifdef _DEBUG
