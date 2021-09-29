@@ -20,8 +20,7 @@ using namespace cocos2d;
 // https://github.com/cocos2d/cocos2d-x/blob/5a25fe75cb8b26b61b14b070e757ec3b17ff7791/samples/Cpp/TestCpp/Classes/ShaderTest/ShaderTest.cpp
 
 class ShaderNode : public CCNode {
-    GLuint m_uniformCenter,
-        m_uniformResolution,
+    GLuint m_uniformResolution,
         m_uniformTime,
         m_uniformMouse,
         m_uniformPulse1,
@@ -53,6 +52,7 @@ public:
             return false;
         }
         m_shaderSprites = CCArray::create();
+        m_shaderSprites->retain();
         if (frag.size() > 3 && frag.compare(0, 3, "//@") == 0) {
             std::istringstream stream(frag);
             stream.seekg(4);
@@ -92,7 +92,6 @@ public:
 
         shader->updateUniforms();
 
-        m_uniformCenter = glGetUniformLocation(shader->getProgram(), "center");
         m_uniformResolution = glGetUniformLocation(shader->getProgram(), "resolution");
         m_uniformTime = glGetUniformLocation(shader->getProgram(), "time");
         m_uniformMouse = glGetUniformLocation(shader->getProgram(), "mouse");
@@ -101,16 +100,16 @@ public:
         m_uniformPulse3 = glGetUniformLocation(shader->getProgram(), "pulse3");
         m_uniformFft = glGetUniformLocation(shader->getProgram(), "fft");
 
-        this->setShaderProgram(shader);
-
         for (size_t i = 0; i < m_shaderSprites->count(); ++i) {
             auto uniform = glGetUniformLocation(shader->getProgram(), ("sprite" + std::to_string(i)).c_str());
             glUniform1i(uniform, i);
-            std::cout << "setting some uniform" << std::endl;
-            auto sprite = reinterpret_cast<CCSprite*>(m_shaderSprites->objectAtIndex(i));
-            sprite->setScale(0.3f);
-            ccGLBindTexture2DN(sprite->getTexture()->getName(), i);
+            // std::cout << "setting some uniform" << std::endl;
+            // auto sprite = reinterpret_cast<CCSprite*>(m_shaderSprites->objectAtIndex(i));
+            // sprite->setScale(0.3f);
+            // ccGLBindTexture2DN(sprite->getTexture()->getName(), i);
         }
+
+        this->setShaderProgram(shader);
 
         m_time = 0.f;
         auto size = CCDirector::sharedDirector()->getWinSize();
@@ -169,13 +168,17 @@ public:
         float w = frSize.width, h = frSize.height;
         GLfloat vertices[12] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
 
-        // TODO: actually set the center
-        getShaderProgram()->setUniformLocationWith2f(m_uniformCenter, 0.f, 0.f);
         getShaderProgram()->setUniformLocationWith2f(m_uniformResolution, w, h);
         const auto mousePos = glv->getMousePosition();
         getShaderProgram()->setUniformLocationWith2f(m_uniformMouse, mousePos.x, h - mousePos.y);
 
-        // ccGLBindTexture2D()
+        for (size_t i = 0; i < m_shaderSprites->count(); ++i) {
+            auto sprite = dynamic_cast<CCSprite*>(m_shaderSprites->objectAtIndex(i));
+            if (sprite) {
+                sprite->setScale(0.3f);
+                ccGLBindTexture2DN(i, sprite->getTexture()->getName());
+            }
+        }
 
         glUniform1f(m_uniformTime, m_time);
 
@@ -249,7 +252,6 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
     // yes im using std::filesystem just for this
     // CCFileUtils::isFileExist is really weird and broken
     if (std::filesystem::exists(shaderPath)) {
-        std::cout << "loading from " << shaderPath << std::endl;
         std::ifstream file;
         file.open(shaderPath, std::ios::in);
         // this is the best way i could find of reading an entire file
@@ -262,7 +264,6 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
         // which i made some time ago in shadertoy
         // https://www.shadertoy.com/view/wdG3Wh
         shaderSource = STRINGIFY(
-            uniform vec2 center; // useless atm
             uniform vec2 resolution;
             uniform float time;
             uniform vec2 mouse; // not used here
