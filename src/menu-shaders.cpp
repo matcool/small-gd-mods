@@ -53,9 +53,9 @@ public:
         m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_SPECTRUM_SIZE * 2);
         m_fftDsp->setActive(true);
 
-        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE);
-        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE);
-        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE);
+        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
 
         shader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
         shader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
