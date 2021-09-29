@@ -107,8 +107,12 @@ public:
                     std::cout << data->length << std::endl;
                     for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
-                        // average out the left and right channels
-                        m_newSpectrum[i] = (data->spectrum[0][i] + data->spectrum[1][i]) / 2.f;
+                        // average out all the channels
+                        m_newSpectrum[i] = 0.f;
+                        for (size_t j = 0; j < data->numchannels; j++) {
+                            m_newSpectrum[i] += data->spectrum[j][i];
+                        }
+                        m_newSpectrum[i] /= data->numchannels;
                     }
                 }
             }
