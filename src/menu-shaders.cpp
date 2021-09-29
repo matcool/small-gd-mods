@@ -110,7 +110,6 @@ public:
                 unsigned int length;
                 m_fftDsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&data, &length, nullptr, 0);
                 if (length) {
-                    std::cout << data->length << std::endl;
                     for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
                         // average out all the channels
