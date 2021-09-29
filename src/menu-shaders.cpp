@@ -144,12 +144,12 @@ public:
                 if (length) {
                     for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
-                        // average out all the channels
                         m_newSpectrum[i] = 0.f;
-                        for (size_t j = 0; j < data->numchannels; j++) {
+                        int n = min(data->numchannels, 2);
+                        for (size_t j = 0; j < n; ++j) {
                             m_newSpectrum[i] += data->spectrum[j][i];
                         }
-                        m_newSpectrum[i] /= data->numchannels;
+                        m_newSpectrum[i] /= float(n);
                     }
                 }
             }
