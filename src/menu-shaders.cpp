@@ -31,6 +31,12 @@ class ShaderNode : public CCNode {
     float m_time;
     FMOD::DSP* m_fftDsp = nullptr;
     static constexpr int FFT_SPECTRUM_SIZE = 512;
+    // gd cuts frequencies higher than ~16kHz, so why can't we? (the "139/512" part)
+    // we also remove the right half (by multiplying by 2), because it's a mirrored version of the left half, so we don't need that
+    // (and fmod actually removes it completely, so it's always all zeros anyway)
+    // (there are actually 513 empty bins instead of 512 but the last one gets cut off by the "139/512" part)
+    // i know, this is weird af
+    static constexpr int FFT_WINDOW_SIZE = (FFT_SPECTRUM_SIZE + (FFT_SPECTRUM_SIZE * 139 / 512)) * 2;
     static constexpr float FFT_UPDATE_FREQUENCY = 20.f;
     float m_spectrum[FFT_SPECTRUM_SIZE];
     float m_oldSpectrum[FFT_SPECTRUM_SIZE];
@@ -73,12 +79,12 @@ public:
         engine->m_pSystem->createDSPByType(FMOD_DSP_TYPE_FFT, &m_fftDsp);
         engine->m_pGlobalChannel->addDSP(1, m_fftDsp);
         m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWTYPE, FMOD_DSP_FFT_WINDOW_HAMMING);
-        m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_SPECTRUM_SIZE * 2);
+        m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_WINDOW_SIZE);
         m_fftDsp->setActive(true);
 
-        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE);
-        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE);
-        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE);
+        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
 
         shader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
         shader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
@@ -138,8 +144,12 @@ public:
                 if (length) {
                     for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
-                        // average out the left and right channels
-                        m_newSpectrum[i] = (data->spectrum[0][i] + data->spectrum[1][i]) / 2.f;
+                        // average out all the channels
+                        m_newSpectrum[i] = 0.f;
+                        for (size_t j = 0; j < data->numchannels; j++) {
+                            m_newSpectrum[i] += data->spectrum[j][i];
+                        }
+                        m_newSpectrum[i] /= data->numchannels;
                     }
                 }
             }
