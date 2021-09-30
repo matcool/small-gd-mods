@@ -318,7 +318,7 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
     uniform float pulse1; // i recommend this one
     uniform float pulse2;
     uniform float pulse3;
-    uniform float fft[512];
+    uniform float fft[744];
 
     void main() {
         vec2 uv = gl_FragCoord.xy / resolution;
