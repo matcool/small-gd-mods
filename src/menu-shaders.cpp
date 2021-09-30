@@ -29,17 +29,18 @@ class ShaderNode : public CCNode {
         m_uniformFft;
     float m_time;
     FMOD::DSP* m_fftDsp = nullptr;
-    static constexpr int FFT_SPECTRUM_SIZE = 512;
-    // gd cuts frequencies higher than ~16kHz, so why can't we? (the "139/512" part)
+    static constexpr int FFT_SPECTRUM_SIZE = 1024;
+    // gd cuts frequencies higher than ~16kHz, so we should too (the "140/512" part)
     // we also remove the right half (by multiplying by 2), because it's a mirrored version of the left half, so we don't need that
     // (and fmod actually removes it completely, so it's always all zeros anyway)
-    // (there are actually 513 empty bins instead of 512 but the last one gets cut off by the "139/512" part)
+    // (there are actually 513 empty bins instead of 512 but the last one gets cut off by the "140/512" part)
     // i know, this is weird af
-    static constexpr int FFT_WINDOW_SIZE = (FFT_SPECTRUM_SIZE + (FFT_SPECTRUM_SIZE * 139 / 512)) * 2;
+    static constexpr int FFT_ACTUAL_SPECTRUM_SIZE = FFT_SPECTRUM_SIZE - (FFT_SPECTRUM_SIZE * 140 / 512);
+    static constexpr int FFT_WINDOW_SIZE = FFT_SPECTRUM_SIZE * 2;
     static constexpr float FFT_UPDATE_FREQUENCY = 20.f;
-    float m_spectrum[FFT_SPECTRUM_SIZE];
-    float m_oldSpectrum[FFT_SPECTRUM_SIZE];
-    float m_newSpectrum[FFT_SPECTRUM_SIZE];
+    float m_spectrum[FFT_ACTUAL_SPECTRUM_SIZE];
+    float m_oldSpectrum[FFT_ACTUAL_SPECTRUM_SIZE];
+    float m_newSpectrum[FFT_ACTUAL_SPECTRUM_SIZE];
     float m_spectrumUpdateAccumulator;
     CCArray* m_shaderSprites;
 public:
@@ -82,9 +83,9 @@ public:
         m_fftDsp->setParameterInt(FMOD_DSP_FFT_WINDOWSIZE, FFT_WINDOW_SIZE);
         m_fftDsp->setActive(true);
 
-        std::memset(m_spectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
-        std::memset(m_oldSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
-        std::memset(m_newSpectrum, 0, FFT_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_spectrum, 0, FFT_ACTUAL_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_oldSpectrum, 0, FFT_ACTUAL_SPECTRUM_SIZE * sizeof(float));
+        std::memset(m_newSpectrum, 0, FFT_ACTUAL_SPECTRUM_SIZE * sizeof(float));
 
         shader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
         shader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
@@ -141,7 +142,7 @@ public:
                 unsigned int length;
                 m_fftDsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&data, &length, nullptr, 0);
                 if (length) {
-                    for (size_t i = 0; i < min(data->length, FFT_SPECTRUM_SIZE); i++) {
+                    for (size_t i = 0; i < min(data->length, FFT_ACTUAL_SPECTRUM_SIZE); i++) {
                         m_oldSpectrum[i] = m_newSpectrum[i];
                         m_newSpectrum[i] = 0.f;
                         int n = min(data->numchannels, 2);
@@ -155,7 +156,7 @@ public:
             m_spectrumUpdateAccumulator = 0.f;
         }
         float t = m_spectrumUpdateAccumulator * FFT_UPDATE_FREQUENCY;
-        for (int i = 0; i < FFT_SPECTRUM_SIZE; i++) {
+        for (int i = 0; i < FFT_ACTUAL_SPECTRUM_SIZE; i++) {
             m_spectrum[i] = (1.f - t) * m_oldSpectrum[i] + t * m_newSpectrum[i];
         }
     }
@@ -188,7 +189,7 @@ public:
         glUniform1f(m_uniformPulse2, engine->m_fPulse2);
         glUniform1f(m_uniformPulse3, engine->m_fPulse3);
 
-        glUniform1fv(m_uniformFft, FFT_SPECTRUM_SIZE, m_spectrum);
+        glUniform1fv(m_uniformFft, FFT_ACTUAL_SPECTRUM_SIZE, m_spectrum);
 
         ccGLEnableVertexAttribs(kCCVertexAttribFlag_Position);
 
