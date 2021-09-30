@@ -353,7 +353,7 @@ bool __fastcall MoreOptionsLayer_init_H(gd::MoreOptionsLayer* self) {
     return true;
 }
 
-#define _DEBUG
+// #define _DEBUG
 
 DWORD WINAPI my_thread(void* hModule) {
 #ifdef _DEBUG
