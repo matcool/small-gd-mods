@@ -16,8 +16,31 @@ using namespace cocos2d;
 
 #define STRINGIFY(...) #__VA_ARGS__
 
+inline void patch(void* loc, std::vector<std::uint8_t> bytes) {
+    auto size = bytes.size();
+    DWORD old_prot;
+    VirtualProtect(loc, size, PAGE_EXECUTE_READWRITE, &old_prot);
+    memcpy(loc, bytes.data(), size);
+    VirtualProtect(loc, size, old_prot, &old_prot);
+}
+
 // most of this is from
 // https://github.com/cocos2d/cocos2d-x/blob/5a25fe75cb8b26b61b14b070e757ec3b17ff7791/samples/Cpp/TestCpp/Classes/ShaderTest/ShaderTest.cpp
+
+// this is only so i can access protected members
+class MyShaderProgram : public CCGLProgram {
+public:
+    std::string getFragShaderLog() {
+        GLint length, written;
+        glGetShaderiv(this->m_uFragShader, GL_INFO_LOG_LENGTH, &length);
+        if (length <= 0) return "";
+        auto stuff = new char[length + 1];
+        glGetShaderInfoLog(this->m_uFragShader, length, &written, stuff);
+        std::string result(stuff);
+        delete[] stuff;
+        return result;
+    }
+};
 
 class ShaderNode : public CCNode {
     GLuint m_uniformResolution,
@@ -46,10 +69,19 @@ class ShaderNode : public CCNode {
 public:
     bool init(const GLchar* vert, const std::string& frag) {
         auto shader = new CCGLProgram;
+        static bool hasPatched = false;
+        if (!hasPatched) {
+            hasPatched = true;
+            auto addr = cast<uintptr_t>(GetProcAddress(
+                GetModuleHandleA("libcocos2d.dll"), "?compileShader@CCGLProgram@cocos2d@@AAE_NPAIIPBD@Z"));
+            // ok so basically this patches out an abort() in compileShader
+            // because for some reason they decided to make it return false only on winRT ???
+            // and on every other platform else it aborts
+            patch(cast<void*>(addr + 0xA9), {0x90, 0x90, 0x90, 0x90, 0x90, 0x90});
+        }
         if (!shader->initWithVertexShaderByteArray(vert, frag.c_str())) {
-            // this doesnt work :c
-            auto error = glGetError();
-            std::cout << "opengl error " << error << std::endl;
+            const auto error = reinterpret_cast<MyShaderProgram*>(shader)->getFragShaderLog();
+            MessageBoxA(NULL, error.c_str(), "menu-shaders failed to load shaders", 0);
             return false;
         }
         m_shaderSprites = CCArray::create();
@@ -209,14 +241,6 @@ public:
         return node;
     }
 };
-
-inline void patch(void* loc, std::vector<std::uint8_t> bytes) {
-    auto size = bytes.size();
-    DWORD old_prot;
-    VirtualProtect(loc, size, PAGE_EXECUTE_READWRITE, &old_prot);
-    memcpy(loc, bytes.data(), size);
-    VirtualProtect(loc, size, old_prot, &old_prot);
-}
 
 static const auto menuShadersKey = "menu-shader-enabled";
 bool g_enabled = false;
