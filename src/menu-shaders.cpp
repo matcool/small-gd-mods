@@ -210,10 +210,6 @@ public:
     }
 };
 
-// ptr -> ref
-template <typename T>
-T& ref(T* value) { return *value; }
-
 inline void patch(void* loc, std::vector<std::uint8_t> bytes) {
     auto size = bytes.size();
     DWORD old_prot;
@@ -224,18 +220,17 @@ inline void patch(void* loc, std::vector<std::uint8_t> bytes) {
 
 static const auto menuShadersKey = "menu-shader-enabled";
 bool g_enabled = false;
-bool g_hasPatched = false;
 
 bool (__thiscall* MenuLayer_init)(gd::MenuLayer*);
 bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
-    auto& gm = ref(gd::GameManager::sharedState());
-    g_enabled = gm.getGameVariableDefault(menuShadersKey, true);
-    if (g_enabled && !g_hasPatched) {
+    g_enabled = gd::GameManager::sharedState()->getGameVariableDefault(menuShadersKey, true);
+    static bool hasPatched = false;
+    if (g_enabled && !hasPatched) {
         // huge thanks to adaf for this!
         // im doing the patch here instead of the dll entry thread because
         // that could cause a crash as its in a different thread
         patch(cast<void*>(gd::base + 0x23b56), {0x90, 0x90, 0x90, 0x90, 0x90, 0x90});
-        g_hasPatched = true;
+        hasPatched = true;
     }
 
     if (!MenuLayer_init(self)) return false;
@@ -247,8 +242,7 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
         gameLayer->removeFromParentAndCleanup(true);
         gameLayer = nullptr;
     }
-    auto& utils = ref(CCFileUtils::sharedFileUtils());
-    const auto& shaderPath = utils.fullPathForFilename("menu-shader.fsh", false);
+    const auto shaderPath = CCFileUtils::sharedFileUtils()->fullPathForFilename("menu-shader.fsh", false);
     std::string shaderSource;
     // yes im using std::filesystem just for this
     // CCFileUtils::isFileExist is really weird and broken
