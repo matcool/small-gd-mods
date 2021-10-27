@@ -3,9 +3,9 @@
 	url = https://github.com/TsudaKageyu/minhook/
 [submodule "libraries/gd.h"]
 	path = libraries/gd.h
-	url = git@github.com:matcool/gd.h.git
+	url = https://github.com/matcool/gd.h.git
 [submodule "libraries/cocos-headers"]
 	path = libraries/cocos-headers
 	url = https://github.com/HJfod/cocos-headers.git
 [submodule "gd.h"]
-	url = git@github.com:matcool/gd.h.git
+	url = https://github.com/matcool/gd.h.git
