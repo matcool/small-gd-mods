@@ -88,3 +88,5 @@ setup_mod(mats-orb-fix src/practice-orb-fix.cpp
 setup_mod(crash-logger src/crash-logger.cpp)
 target_link_libraries(crash-logger dbghelp.lib)
 
+setup_mod(timestamp-fix src/timestamp-fix.cpp)
+
