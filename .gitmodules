@@ -9,3 +9,9 @@
 	url = https://github.com/HJfod/cocos-headers.git
 [submodule "gd.h"]
 	url = git@github.com:matcool/gd.h.git
+[submodule "libraries/mat-dash"]
+	path = libraries/mat-dash
+	url = git@github.com:matcool/mat-dash.git
+[submodule "libraries/gdhm-api"]
+	path = libraries/gdhm-api
+	url = https://github.com/matcool/GDHM-API.git
