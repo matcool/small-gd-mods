@@ -40,6 +40,7 @@ protected:
 
     struct List;
     struct Checkbox;
+    struct Textbox;
 
     static int getNextID() {
         static int value = 0;
@@ -70,21 +71,11 @@ protected:
             if (size == -1) return;
             callback(size - index - 1);
         }
-    };
-    struct gdhmCB {
-        template <auto callback, auto id>
-        static void __cdecl checkbox() {
-            callback(Window::getValue<Checkbox, bool, id>());
-        }
 
         template <auto callback>
-        static void __cdecl button() {
-            callback();
-        }
-
-        template <auto callback>
-        static void __cdecl main() {
-            callback(Window::get());
+        static void __stdcall textbox(void* box) {
+            if (HackproGetUserData(box)) return;
+            callback(HackproGetTextBoxText(box));
         }
     };
 
@@ -95,6 +86,7 @@ protected:
             CHECKBOX,
             BUTTON,
             LIST,
+            TEXTBOX,
         } type;
         union {
             struct {
@@ -113,6 +105,11 @@ protected:
                 void(__stdcall* callback)(void*, int, const char*);
                 void** ptr;
             } list;
+            struct {
+                const char* placeholder;
+                void(__stdcall* callback)(void*);
+                void** ptr;
+            } textbox;
         };
     };
 
@@ -154,16 +151,26 @@ public:
                             *m.ptr = combo;
                             break;
                         }
+                        case HackProWidgetAction::Type::TEXTBOX: {
+                            const auto& m = action.textbox;
+                            auto textbox = HackproAddTextBox(hackproExt, m.callback);
+                            if (m.placeholder)
+                                HackproSetTextBoxPlaceholder(textbox, m.placeholder);
+                            *m.ptr = textbox;
+                            break;
+                        }
                     }
                     hackproWidgets.pop();
                 }
                 post(*this);
                 HackproCommitExt(hackproExt);
             }
-        } else if (gdhm::is_gdhm_loaded()) {
+        } else if (gdhm::is_loaded()) {
             type = ModMenuType::GDHM;
-            gdhm::add_mod_window(name, "", nullptr, nullptr, reinterpret_cast<void*>(&gdhmCB::main<func>), nullptr);
-            post(*this); // TODO: maybe not do this
+            gdhm::gui::window(name, "", nullptr, nullptr, [&]() {
+                func(*this);
+                post(*this);
+            }, nullptr);
         }
     }
 
@@ -177,7 +184,9 @@ public:
             action.checkbox = { name, &hackproCB::checkbox<callback>, &hackproCB::uncheckbox<callback>, &getValue<Checkbox, void*, id>() };
             hackproWidgets.push(action);
         } else if (type == ModMenuType::GDHM) {
-            gdhm::add_checkbox(getNextID(), name, &getValue<Checkbox, bool, id>(), nullptr, reinterpret_cast<void*>(&gdhmCB::checkbox<callback, id>));
+            // gdhm::gui::checkbox(getNextID(), name, &getValue<Checkbox, bool, id>(), nullptr, []() {
+            //     callback(getValue<Checkbox, bool, id>());
+            // });
         }
     }
     
@@ -198,7 +207,9 @@ public:
             action.button = { name, &hackproCB::button<callback> };
             hackproWidgets.push(action);
         } else if (type == ModMenuType::GDHM) {
-            gdhm::add_button(getNextID(), name, nullptr, reinterpret_cast<void*>(&gdhmCB::button<callback>));
+            // gdhm::gui::button(getNextID(), name, nullptr, []() {
+            //     callback();
+            // });
         }
     }
 
@@ -214,6 +225,8 @@ public:
             action.type = HackProWidgetAction::Type::LIST;
             action.list = { values.size(), output, &hackproCB::list<callback>, &getValue<List, void*, id>() };
             hackproWidgets.push(action);
+        } else if (type == ModMenuType::GDHM) {
+
         }
     }
 
@@ -223,6 +236,27 @@ public:
             const auto combo = getValue<List, void*, id>();
             const auto size = reinterpret_cast<int>(HackproGetUserData(combo));
             HackproSetComboBoxIndex(combo, size - index - 1);
+        }
+    }
+
+    template <WidgetID id, TextboxCallback callback>
+    void addTextbox(const char* placeholder = nullptr) {
+        if (type == ModMenuType::HACKPRO) {
+            HackProWidgetAction action;
+            action.type = HackProWidgetAction::Type::TEXTBOX;
+            action.textbox = { placeholder, &hackproCB::textbox<callback>, &getValue<Textbox, void*, id>() };
+            hackproWidgets.push(action);
+        } else if (type == ModMenuType::GDHM) {
+        }
+    }
+
+    template <WidgetID id>
+    void setTextboxText(const char* text) {
+        if (type == ModMenuType::HACKPRO) {
+            const auto box = getValue<Textbox, void*, id>();
+            HackproSetUserData(box, (void*)1);
+            HackproSetTextBoxText(box, text);
+            HackproSetUserData(box, 0);
         }
     }
 };
