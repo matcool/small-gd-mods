@@ -43,6 +43,9 @@ macro(setup_mod project_name file_name)
       message("gdhm api might not work (what compiler are you using tf)")
     endif()
   endif()
+  if (";${ARGN};" MATCHES ";opengl;")
+    target_link_libraries(${project_name} opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
+  endif()
   set_target_properties(${project_name} PROPERTIES PREFIX "")
 endmacro()
 
@@ -62,8 +65,7 @@ setup_mod(sum-attempts src/sum-attempts.cpp
   minhook cocos gd.h nomerge)
 
 setup_mod(ingame-screenshot src/ingame-screenshot.cpp
-  minhook cocos gd.h)
-target_link_libraries(ingame-screenshot opengl32)
+  minhook cocos gd.h opengl)
 
 setup_mod(song-search src/song-search.cpp
   minhook cocos gd.h)
@@ -72,8 +74,7 @@ setup_mod(fps-multiplier src/fps-multiplier.cpp
   minhook cocos)
 
 setup_mod(menu-shaders src/menu-shaders.cpp
-  minhook cocos gd.h fmod)
-target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
+  minhook cocos gd.h fmod opengl)
 
 setup_mod(mats-orb-fix src/practice-orb-fix.cpp
   minhook cocos gd.h nomerge)
@@ -84,9 +85,7 @@ target_link_libraries(crash-logger dbghelp.lib)
 setup_mod(timestamp-fix src/timestamp-fix.cpp)
 
 setup_mod(internal-res src/internal-res.cpp
-  minhook cocos gd.h)
-target_link_libraries(internal-res opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
-target_include_directories(internal-res PRIVATE libraries/mat-dash/include)
+  minhook cocos gd.h mat modmenu opengl)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # ensure 32 bit on clang
