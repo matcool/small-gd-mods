@@ -3,8 +3,7 @@
 #include "mapped-hooks.hpp"
 #include "utils.hpp"
 #include <cocos2d.h>
-#include <extensions/GUI/CCControlExtension/CCControlColourPicker.h>
-#include <extensions/GUI/CCControlExtension/CCScale9Sprite.h>
+#include <cocos-ext.h>
 #include <gd.h>
 #include <fstream>
 #include <iostream>
