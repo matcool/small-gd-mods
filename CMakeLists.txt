@@ -59,7 +59,7 @@ setup_mod(every-key-jumps src/every-key-jumps.cpp
   minhook)
 
 setup_mod(rgb-color-input src/rgb-color-input.cpp
-  minhook cocos gd.h nomerge)
+  minhook cocos gd.h mat)
 
 setup_mod(sum-attempts src/sum-attempts.cpp
   minhook cocos gd.h nomerge)

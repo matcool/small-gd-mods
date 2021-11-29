@@ -1,16 +1,16 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include "mapped-hooks.hpp"
 #include "utils.hpp"
 #include <cocos2d.h>
 #include <cocos-ext.h>
 #include <gd.h>
 #include <fstream>
 #include <iostream>
+#include <matdash.hpp>
+#include <matdash/minhook.hpp>
+#include <matdash/boilerplate.hpp>
 
 using namespace cocos2d;
-
-uintptr_t base;
 
 inline std::string color_to_hex(ccColor3B color) {
     static constexpr auto digits = "0123456789ABCDEF";
@@ -203,8 +203,8 @@ public:
 
 RGBColorInputWidget* g_widget = nullptr;
 
-bool __fastcall ColorSelectPopup_init(gd::ColorSelectPopup* self, void*, gd::EffectGameObject* eff_obj, CCArray* arr, gd::ColorAction* action) {
-    if (!MHook::getOriginal(ColorSelectPopup_init)(self, 0, eff_obj, arr, action)) return false;
+bool ColorSelectPopup_init(gd::ColorSelectPopup* self, gd::EffectGameObject* eff_obj, CCArray* arr, gd::ColorAction* action) {
+    if (!orig<&ColorSelectPopup_init>(self, eff_obj, arr, action)) return false;
     auto layer = self->getAlertLayer();
     auto widget = RGBColorInputWidget::create(self);
     g_widget = widget;
@@ -219,25 +219,25 @@ bool __fastcall ColorSelectPopup_init(gd::ColorSelectPopup* self, void*, gd::Eff
     return true;
 }
 
-void __fastcall ColorSelectPopup_colorValueChanged(gd::ColorSelectPopup* self) {
-    MHook::getOriginal(ColorSelectPopup_colorValueChanged)(self);
+void ColorSelectPopup_colorValueChanged(gd::ColorSelectPopup* self) {
+    orig<&ColorSelectPopup_colorValueChanged>(self);
     if (g_widget)
         g_widget->update_labels(true, true);
 }
 
-void __fastcall ColorSelectPopup_updateCopyColorIdfk(gd::ColorSelectPopup* self) {
-    MHook::getOriginal(ColorSelectPopup_updateCopyColorIdfk)(self);
+void ColorSelectPopup_updateCopyColorIdfk(gd::ColorSelectPopup* self) {
+    orig<&ColorSelectPopup_updateCopyColorIdfk>(self);
     if (g_widget)
         g_widget->setVisible(!self->copyColor);
 }
 
-void __fastcall ColorSelectPopup_dtor(void* self) {
+void ColorSelectPopup_dtor(void* self) {
     g_widget = nullptr;
-    MHook::getOriginal(ColorSelectPopup_dtor)(self);
+    orig<&ColorSelectPopup_dtor>(self);
 }
 
-bool __fastcall SetupPulsePopup_init(gd::SetupPulsePopup* self, void*, gd::EffectGameObject* eff_obj, CCArray* arr) {
-    if (!MHook::getOriginal(SetupPulsePopup_init)(self, 0, eff_obj, arr)) return false;
+bool SetupPulsePopup_init(gd::SetupPulsePopup* self, gd::EffectGameObject* eff_obj, CCArray* arr) {
+    if (!orig<&SetupPulsePopup_init>(self, eff_obj, arr)) return false;
 
     auto layer = cast<gd::ColorSelectPopup*>(self)->getAlertLayer();
     auto widget = RGBColorInputWidget::create(cast<gd::ColorSelectPopup*>(self)); // the color picker is in the same offset in both classe s
@@ -254,60 +254,29 @@ bool __fastcall SetupPulsePopup_init(gd::SetupPulsePopup* self, void*, gd::Effec
 
     return true;
 }
-void __fastcall SetupPulsePopup_colorValueChanged(void* self) {
-    MHook::getOriginal(SetupPulsePopup_colorValueChanged)(self);
+void SetupPulsePopup_colorValueChanged(void* self) {
+    orig<&SetupPulsePopup_colorValueChanged>(self);
     if (g_widget)
         g_widget->update_labels(true, true);
 }
-void __fastcall SetupPulsePopup_switchPulseModeIDK(gd::SetupPulsePopup* self) {
-    MHook::getOriginal(SetupPulsePopup_switchPulseModeIDK)(self);
+void SetupPulsePopup_switchPulseModeIDK(gd::SetupPulsePopup* self) {
+    orig<&SetupPulsePopup_switchPulseModeIDK>(self);
     if (g_widget)
         g_widget->setVisible(self->pulseMode == 0);
 }
-void __fastcall SetupPulsePopup_dtor(void* self) {
+void SetupPulsePopup_dtor(void* self) {
     g_widget = nullptr;
-    MHook::getOriginal(SetupPulsePopup_dtor)(self);
+    orig<&SetupPulsePopup_dtor>(self);
 }
 
-DWORD WINAPI my_thread(void* hModule) {
-#ifdef _DEBUG
-    AllocConsole();
-    std::ofstream conout("CONOUT$", std::ios::out);
-    std::ifstream conin("CONIN$", std::ios::in);
-    std::cout.rdbuf(conout.rdbuf());
-    std::cin.rdbuf(conin.rdbuf());
-#endif
+void mod_main() {
+    add_hook<&ColorSelectPopup_init>(gd::base + 0x43ae0);
+    add_hook<&ColorSelectPopup_colorValueChanged>(gd::base + 0x46f30);
+    add_hook<&ColorSelectPopup_updateCopyColorIdfk>(gd::base + 0x479c0);
+    add_hook<&ColorSelectPopup_dtor>(gd::base + 0x43900);
 
-    MH_Initialize();
-
-    base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    
-    MHook::registerHook(base + 0x43ae0, ColorSelectPopup_init);
-    MHook::registerHook(base + 0x46f30, ColorSelectPopup_colorValueChanged);
-    MHook::registerHook(base + 0x479c0, ColorSelectPopup_updateCopyColorIdfk);
-    MHook::registerHook(base + 0x43900, ColorSelectPopup_dtor);
-
-    MHook::registerHook(base + 0x23e980, SetupPulsePopup_init);
-    MHook::registerHook(base + 0x2426b0, SetupPulsePopup_colorValueChanged);
-    MHook::registerHook(base + 0x242cf0, SetupPulsePopup_switchPulseModeIDK);
-    MHook::registerHook(base + 0x23e7b0, SetupPulsePopup_dtor);
-
-    MH_EnableHook(MH_ALL_HOOKS);
-
-#ifdef _DEBUG
-    std::getline(std::cin, std::string());
-
-    MH_Uninitialize();
-    conout.close();
-    conin.close();
-    FreeConsole();
-    FreeLibraryAndExitThread(reinterpret_cast<HMODULE>(hModule), 0);
-#endif
-    return 0;
-}
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
-    if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-        CreateThread(0, 0, my_thread, hModule, 0, 0);
-    return TRUE;
+    add_hook<&SetupPulsePopup_init>(gd::base + 0x23e980);
+    add_hook<&SetupPulsePopup_colorValueChanged>(gd::base + 0x2426b0);
+    add_hook<&SetupPulsePopup_switchPulseModeIDK>(gd::base + 0x242cf0);
+    add_hook<&SetupPulsePopup_dtor>(gd::base + 0x23e7b0);
 }
