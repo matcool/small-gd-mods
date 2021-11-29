@@ -1,62 +1,56 @@
-cmake_minimum_required(VERSION 3.3.0)
+cmake_minimum_required(VERSION 3.10.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 cmake_policy(SET CMP0057 NEW)
 
-find_file(WINDOWS_HEADER windows.h)
-if(NOT WINDOWS_HEADER)
-  message(FATAL_ERROR "Can't find windows.h!")
-endif()
-option(BUILD_SHARED_LIBS "" ON)
+# option(BUILD_SHARED_LIBS "" ON)
 
-add_subdirectory(libraries/minhook)
-
-set(MINHOOK libraries/minhook/include)
-set(COCOS_HEADERS
-  libraries/cocos-headers/
-  libraries/cocos-headers/extensions
-  libraries/cocos-headers/cocos2dx
-  libraries/cocos-headers/cocos2dx/include
-  libraries/cocos-headers/cocos2dx/kazmath/include
-  libraries/cocos-headers/cocos2dx/platform/win32
-  libraries/cocos-headers/cocos2dx/platform/third_party/win32
-  libraries/cocos-headers/cocos2dx/platform/third_party/win32/OGLES
-)
-set(GD.H libraries/gd.h libraries/gd.h/include)
-
-set(COCOS2D_LIB
-  ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/cocos2dx/libcocos2d.lib
-  ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/extensions/libExtensions.lib
-)
 
 macro(setup_mod project_name file_name)
   project(${project_name})
   add_library(${project_name} SHARED ${file_name})
+  set(CMAKE_SIZEOF_VOID_P 4)
 
   if (";${ARGN};" MATCHES ";minhook;")
-    target_include_directories(${project_name} PRIVATE ${MINHOOK})
+    target_include_directories(${project_name} PRIVATE libraries/minhook/include)
     target_link_libraries(${project_name} minhook)
   endif()
   if (";${ARGN};" MATCHES ";cocos;")
-    target_include_directories(${project_name} PRIVATE ${COCOS_HEADERS})
-    target_link_libraries(${project_name} ${COCOS2D_LIB})
+    target_link_libraries(${project_name} cocos2d)
   endif()
   if (";${ARGN};" MATCHES ";gd.h;")
-    target_include_directories(${project_name} PRIVATE ${GD.H})
+    target_include_directories(${project_name} PRIVATE libraries/gd.h libraries/gd.h/include)
   endif()
   if (";${ARGN};" MATCHES ";nomerge;")
     target_link_options(${project_name} PRIVATE "/OPT:REF,NOICF")
   endif()
+  if (";${ARGN};" MATCHES ";fmod;")
+    target_link_libraries(${project_name} ${CMAKE_SOURCE_DIR}/libraries/fmod/fmod.lib)
+    target_include_directories(${project_name} PRIVATE libraries/fmod)
+  endif()
+  if (";${ARGN};" MATCHES ";mat;")
+    target_include_directories(${project_name} PRIVATE libraries/mat-dash/include)
+  endif()
+  if (";${ARGN};" MATCHES ";modmenu;")
+    target_link_libraries(${project_name} ${CMAKE_SOURCE_DIR}/libraries/gdhm-api/lib/ToastedMarshmellow.lib)
+    if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+      target_link_options(${project_name} PRIVATE "/DELAYLOAD:ToastedMarshmellow.dll")
+    elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+      # these actually dont set the link options (thanks cmake), so instead manually provide -Wl,
+      target_link_options(${project_name} PRIVATE "-Wl,/delayload:ToastedMarshmellow.dll" "-ldelayimp")
+    else()
+      message("gdhm api might not work (what compiler are you using tf)")
+    endif()
+  endif()
   set_target_properties(${project_name} PROPERTIES PREFIX "")
 endmacro()
-
 
 setup_mod(global-clipboard src/global-clipboard.cpp
   minhook)
 
 setup_mod(run-info src/run-info.cpp
-  minhook cocos gd.h)
+  minhook cocos gd.h mat modmenu)
 
 setup_mod(every-key-jumps src/every-key-jumps.cpp
   minhook)
@@ -78,9 +72,8 @@ setup_mod(fps-multiplier src/fps-multiplier.cpp
   minhook cocos)
 
 setup_mod(menu-shaders src/menu-shaders.cpp
-  minhook cocos gd.h)
-target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib ${CMAKE_SOURCE_DIR}/libraries/fmod/fmod.lib)
-target_include_directories(menu-shaders PRIVATE libraries/fmod)
+  minhook cocos gd.h fmod)
+target_link_libraries(menu-shaders opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
 
 setup_mod(mats-orb-fix src/practice-orb-fix.cpp
   minhook cocos gd.h nomerge)
@@ -90,3 +83,17 @@ target_link_libraries(crash-logger dbghelp.lib)
 
 setup_mod(timestamp-fix src/timestamp-fix.cpp)
 
+setup_mod(internal-res src/internal-res.cpp
+  minhook cocos gd.h)
+target_link_libraries(internal-res opengl32 ${CMAKE_SOURCE_DIR}/libraries/glew32.lib)
+target_include_directories(internal-res PRIVATE libraries/mat-dash/include)
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+  # ensure 32 bit on clang
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -target i386-pc-windows-msvc")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target i386-pc-windows-msvc")
+  add_definitions("--target=i386-pc-windows-msvc")
+endif()
+
+add_subdirectory(libraries/minhook)
+add_subdirectory(libraries/cocos-headers)

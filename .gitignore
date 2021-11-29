@@ -2,3 +2,4 @@ build/
 .vscode/
 injector.exe
 src/test
+.cache/
