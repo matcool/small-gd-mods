@@ -93,10 +93,8 @@ public:
             std::getline(stream, line);
             std::string::size_type pos = line.find(',');
             const auto addSprite = [&](const std::string& name) {
-                std::cout << "loading sprite \"" << name << "\"" << std::endl;
                 auto sprite = CCSprite::create(name.c_str());
                 sprite->retain();
-                std::cout << sprite << std::endl;
                 m_shaderSprites->addObject(sprite);
             };
             int i = 0;
@@ -208,7 +206,6 @@ public:
         for (size_t i = 0; i < m_shaderSprites->count(); ++i) {
             auto sprite = dynamic_cast<CCSprite*>(m_shaderSprites->objectAtIndex(i));
             if (sprite) {
-                sprite->setScale(0.3f);
                 ccGLBindTexture2DN(i, sprite->getTexture()->getName());
             }
         }
@@ -260,11 +257,16 @@ bool __fastcall MenuLayer_init_H(gd::MenuLayer* self){
     if (!MenuLayer_init(self)) return false;
     if (!g_enabled) return true;
 
-    // hm yes very safe, although i cant think of a better way
-    auto gameLayer = dynamic_cast<CCLayer*>(self->getChildren()->objectAtIndex(0));
-    if (gameLayer != nullptr) {
-        gameLayer->removeFromParentAndCleanup(true);
-        gameLayer = nullptr;
+    // great name
+    const auto vtableMenuGameLayer = reinterpret_cast<void*>(gd::base + 0x2cd41c);
+    const auto children = self->getChildren();
+    for (size_t i = 0; i < children->count(); ++i) {
+        const auto vtablePtr = *reinterpret_cast<void**>(children->objectAtIndex(i));
+        if (vtablePtr == vtableMenuGameLayer) {
+            const auto layer = static_cast<CCLayer*>(children->objectAtIndex(i));
+            layer->removeFromParentAndCleanup(true);
+            break;
+        }
     }
     const auto shaderPath = CCFileUtils::sharedFileUtils()->fullPathForFilename("menu-shader.fsh", false);
     std::string shaderSource;
