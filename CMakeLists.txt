@@ -87,6 +87,8 @@ setup_mod(timestamp-fix src/timestamp-fix.cpp)
 setup_mod(internal-res src/internal-res.cpp
   minhook cocos gd.h mat modmenu opengl)
 
+setup_mod(fix-effect-lines src/fix-effect-lines.cpp)
+
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # ensure 32 bit on clang
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -target i386-pc-windows-msvc")
