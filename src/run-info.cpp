@@ -14,6 +14,7 @@
 #include <matdash/boilerplate.hpp>
 
 using namespace cocos2d;
+using namespace matdash;
 
 enum Position : int {
     TOP_LEFT = 0,
@@ -160,7 +161,7 @@ void PlayLayer_resetLevel(gd::PlayLayer* self) {
 }
 
 
-void mod_main() {
+void mod_main(HMODULE) {
     add_hook<&PlayLayer_init>(gd::base + 0x1FB780);
     add_hook<&PlayLayer_togglePracticeMode>(gd::base + 0x20D0D0);
     add_hook<&PlayLayer_resetLevel>(gd::base + 0x20BF00);

@@ -89,6 +89,9 @@ setup_mod(internal-res src/internal-res.cpp
 
 setup_mod(fix-effect-lines src/fix-effect-lines.cpp)
 
+setup_mod(circle-tool src/circle-tool.cpp
+  minhook cocos gd.h mat)
+
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
   # ensure 32 bit on clang
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -target i386-pc-windows-msvc")

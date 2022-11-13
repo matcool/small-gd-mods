@@ -7,6 +7,7 @@
 #include "mod-menu-window.hpp"
 
 using namespace cocos2d;
+using namespace matdash;
 
 bool enabled = false;
 bool active = false;
@@ -70,7 +71,7 @@ uintptr_t cocos_addr(T func) {
     return **cast<uintptr_t**>(union_cast<uintptr_t>(func) + 2);
 }
 
-void mod_main() {
+void mod_main(HMODULE) {
     // AllocConsole();
     // static std::ofstream conout("CONOUT$", std::ios::out);
     // std::cout.rdbuf(conout.rdbuf());

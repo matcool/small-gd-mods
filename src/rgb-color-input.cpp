@@ -11,6 +11,7 @@
 #include <matdash/boilerplate.hpp>
 
 using namespace cocos2d;
+using namespace matdash;
 
 inline std::string color_to_hex(ccColor3B color) {
     static constexpr auto digits = "0123456789ABCDEF";
@@ -53,7 +54,7 @@ class RGBColorInputWidget : public CCLayer, public gd::TextInputDelegate {
         red_input->setMaxLabelLength(3);
         red_input->setMaxLabelScale(0.6f);
         red_input->setLabelPlaceholderColor(placeholder_color);
-        red_input->setLabelPlaceholerScale(0.5f);
+        red_input->setLabelPlaceholderScale(0.5f);
         red_input->setPositionX(r_xpos);
         red_input->setDelegate(this);
 
@@ -62,7 +63,7 @@ class RGBColorInputWidget : public CCLayer, public gd::TextInputDelegate {
         green_input->setMaxLabelLength(3);
         green_input->setMaxLabelScale(0.6f);
         green_input->setLabelPlaceholderColor(placeholder_color);
-        green_input->setLabelPlaceholerScale(0.5f);
+        green_input->setLabelPlaceholderScale(0.5f);
         green_input->setPositionX(0.f);
         green_input->setDelegate(this);
         
@@ -71,7 +72,7 @@ class RGBColorInputWidget : public CCLayer, public gd::TextInputDelegate {
         blue_input->setMaxLabelLength(3);
         blue_input->setMaxLabelScale(0.6f);
         blue_input->setLabelPlaceholderColor(placeholder_color);
-        blue_input->setLabelPlaceholerScale(0.5f);
+        blue_input->setLabelPlaceholderScale(0.5f);
         blue_input->setPositionX(b_xpos);
         blue_input->setDelegate(this);
 
@@ -80,7 +81,7 @@ class RGBColorInputWidget : public CCLayer, public gd::TextInputDelegate {
         hex_input->setMaxLabelLength(6);
         hex_input->setMaxLabelScale(0.7f);
         hex_input->setLabelPlaceholderColor(placeholder_color);
-        hex_input->setLabelPlaceholerScale(0.5f);
+        hex_input->setLabelPlaceholderScale(0.5f);
         hex_input->setPositionY(hex_y);
         hex_input->setDelegate(this);
 
@@ -269,7 +270,7 @@ void SetupPulsePopup_dtor(void* self) {
     orig<&SetupPulsePopup_dtor>(self);
 }
 
-void mod_main() {
+void mod_main(HMODULE) {
     add_hook<&ColorSelectPopup_init>(gd::base + 0x43ae0);
     add_hook<&ColorSelectPopup_colorValueChanged>(gd::base + 0x46f30);
     add_hook<&ColorSelectPopup_updateCopyColorIdfk>(gd::base + 0x479c0);
